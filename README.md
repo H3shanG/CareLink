@@ -85,53 +85,6 @@ The planned user interface includes:
 
 ---
 
-## 🏗️ Proposed Architecture
-
-CareLink follows a modular structure where individual features are separated to make development and maintenance easier.
-
-```text
-lib/
-│
-├── main.dart
-│
-├── app/
-│   ├── routes.dart
-│   ├── theme.dart
-│   └── constants.dart
-│
-├── models/
-│   ├── user.dart
-│   ├── booking.dart
-│   ├── donor.dart
-│   ├── provider.dart
-│   ├── pharmacy.dart
-│   └── child.dart
-│
-├── services/
-│   ├── auth_service.dart
-│   ├── firestore_service.dart
-│   ├── notification_service.dart
-│   └── location_service.dart
-│
-├── features/
-│   ├── authentication/
-│   ├── onboarding/
-│   ├── home/
-│   ├── blood_donation/
-│   ├── caregiver/
-│   ├── pharmacy/
-│   ├── emergency_transport/
-│   ├── child_health/
-│   └── profile/
-│
-└── widgets/
-    ├── custom_button.dart
-    ├── service_card.dart
-    ├── custom_search_bar.dart
-    └── loading_indicator.dart
-```
-
----
 
 ## 👥 Team
 
