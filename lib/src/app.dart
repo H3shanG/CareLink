@@ -12,6 +12,7 @@ class CareLinkApp extends StatelessWidget {
     return MaterialApp(
       title: 'CareLink',
       debugShowCheckedModeBanner: false,
+
       theme: AppTheme.lightTheme,
 
       initialRoute: RouteNames.splash,
