@@ -51,10 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = false;
     });
 
-    // Navigator.pushReplacementNamed(
-    // context,
-    //RouteNames.journeySelection,
-    // );
+    Navigator.pushReplacementNamed(context, RouteNames.journeySelection);
   }
 
   @override
@@ -163,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      // Add forgot-password flow later.
+                      Navigator.pushNamed(context, RouteNames.forgotPassword);
                     },
                     child: const Text('Forgot Password?'),
                   ),

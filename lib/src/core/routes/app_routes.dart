@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/registration_screen.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
+import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/journey/presentation/journey_selection_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
@@ -24,6 +25,9 @@ class AppRoutes {
 
       case RouteNames.register:
         return MaterialPageRoute(builder: (_) => const RegistrationScreen());
+
+      case RouteNames.forgotPassword:
+        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
 
       case RouteNames.roleSelection:
         return MaterialPageRoute(builder: (_) => const RoleSelectionScreen());
