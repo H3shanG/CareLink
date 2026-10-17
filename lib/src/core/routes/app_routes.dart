@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../features/auth/presentation/login_screen.dart';
-//import '../../features/journey/presentation/journey_selection_screen.dart';
+import '../../features/auth/presentation/registration_screen.dart';
+import '../../features/auth/presentation/role_selection_screen.dart';
+import '../../features/journey/presentation/journey_selection_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import 'route_names.dart';
@@ -20,10 +22,16 @@ class AppRoutes {
       case RouteNames.login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
 
-      /*case RouteNames.journeySelection:
+      case RouteNames.register:
+        return MaterialPageRoute(builder: (_) => const RegistrationScreen());
+
+      case RouteNames.roleSelection:
+        return MaterialPageRoute(builder: (_) => const RoleSelectionScreen());
+
+      case RouteNames.journeySelection:
         return MaterialPageRoute(
           builder: (_) => const JourneySelectionScreen(),
-        );*/
+        );
 
       default:
         return MaterialPageRoute(

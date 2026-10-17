@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/asset_paths.dart';
+import '../../../core/routes/route_names.dart';
 import '../../../core/widgets/primary_button.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
@@ -75,7 +76,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   }
 
   void _continue() {
-    // Navigation to Journey Selection will be added when routes are ready.
+    Navigator.pushReplacementNamed(context, RouteNames.journeySelection);
   }
 
   @override

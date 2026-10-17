@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/asset_paths.dart';
+import '../../../core/routes/route_names.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
 
@@ -56,7 +57,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       _isLoading = false;
     });
 
-    // Navigation to Role Selection will be added when routes are ready.
+    Navigator.pushNamed(context, RouteNames.roleSelection);
   }
 
   @override
