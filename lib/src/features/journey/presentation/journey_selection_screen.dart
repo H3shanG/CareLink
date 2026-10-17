@@ -44,7 +44,7 @@ class JourneySelectionScreen extends StatelessWidget {
               const SizedBox(height: 28),
 
               _JourneyCard(
-                icon: Icons.elderly,
+                imagePath: 'assets/images/onboarding/adult_care.png',
                 color: const Color(0xFFD5EEE9),
                 title: 'Adult / Patient Care',
                 description: 'Blood donation, caregivers, medicine, transport, equipment and more.',
@@ -56,7 +56,7 @@ class JourneySelectionScreen extends StatelessWidget {
               const SizedBox(height: AppSizes.lg),
 
               _JourneyCard(
-                icon: Icons.child_care,
+                imagePath: 'assets/images/onboarding/child_care.png',
                 color: const Color(0xFFDDF0DC),
                 title: 'Baby / Child Care',
                 description: 'Childcare, pediatric services, medicine, equipment and more.',
@@ -73,14 +73,14 @@ class JourneySelectionScreen extends StatelessWidget {
 }
 
 class _JourneyCard extends StatelessWidget {
-  final IconData icon;
+  final String imagePath;
   final Color color;
   final String title;
   final String description;
   final VoidCallback onTap;
 
   const _JourneyCard({
-    required this.icon,
+    required this.imagePath,
     required this.color,
     required this.title,
     required this.description,
@@ -100,12 +100,15 @@ class _JourneyCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Container(
-              height: 140,
-              width: double.infinity,
-              color: color,
-              child: Icon(icon, size: 64, color: AppColors.primary),
+            AspectRatio(
+              aspectRatio: 2.5,
+              child: Image.asset(
+                imagePath,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
+
             Padding(
               padding: const EdgeInsets.all(AppSizes.lg),
               child: Row(
