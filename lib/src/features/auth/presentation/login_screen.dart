@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/asset_paths.dart';
+import '../../../core/routes/route_names.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
 
@@ -187,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        // Add registration screen later.
+                        Navigator.pushNamed(context, RouteNames.register);
                       },
                       child: const Text('Create Account'),
                     ),
