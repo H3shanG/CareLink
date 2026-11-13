@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../features/home/presentation/child_home_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/registration_screen.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
@@ -43,6 +43,9 @@ class AppRoutes {
 
               case RouteNames.adultHome:
         return MaterialPageRoute(builder: (_) => const AdultHomeScreen());
+
+        case RouteNames.childHome:
+         return MaterialPageRoute(builder: (_) => const ChildHomeScreen(),);
 
       case RouteNames.bloodDonation:
         return MaterialPageRoute(builder: (_) => const BloodDonationScreen());
