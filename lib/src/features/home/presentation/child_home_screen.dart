@@ -1,5 +1,11 @@
 
 import 'package:flutter/material.dart';
+import 'sick_child_care_screen.dart';
+import 'baby_health_record_screen.dart';
+import 'pediatric_medicine_screen.dart';
+import 'baby_equipment_rental_screen.dart';
+import 'pediatrician_locator_screen.dart';
+import 'emergency_transport_screen.dart';
 
 class ChildHomeScreen extends StatelessWidget {
   const ChildHomeScreen({super.key});
@@ -183,45 +189,99 @@ class ChildHomeScreen extends StatelessWidget {
                   mainAxisSpacing: 10,
                   childAspectRatio: 0.95,
                 ),
-                itemBuilder: (context, index) {
-                  final service = services[index];
+  
+itemBuilder: (context, index) {
+  final service = services[index];
 
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: index.isEven
-                          ? const Color(0xFFFFF0F5)
-                          : const Color(0xFFEAF8F4),
-                      borderRadius:
-                          BorderRadius.circular(15),
-                    ),
-                    child: Column(
-                      mainAxisAlignment:
-                          MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          service['icon'] as IconData,
-                          size: 30,
-                          color: service['color'] as Color,
-                        ),
-                        const SizedBox(height: 10),
-                        Padding(
-                          padding:
-                              const EdgeInsets.symmetric(
-                            horizontal: 4,
-                          ),
-                          child: Text(
-                            service['name'] as String,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+  return InkWell(
+    borderRadius: BorderRadius.circular(15),
+    
+
+
+onTap: () {
+  if (index == 0) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SickChildCareScreen(),
+      ),
+    );
+  } else if (index == 1) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const BabyHealthRecordScreen(),
+      ),
+    );
+  } else if (index == 2) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const PediatricMedicineScreen(),
+      ),
+    );
+  } else if (index == 3) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const BabyEquipmentRentalScreen(),
+      ),
+    );
+  }
+  else if (index == 4) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const PediatricianLocatorScreen(),
+    ),
+  );
+}
+else if (index == 5) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const EmergencyTransportScreen(),
+    ),
+  );
+}
+},
+
+
+    child: Container(
+      decoration: BoxDecoration(
+        color: index.isEven
+            ? const Color(0xFFFFF0F5)
+            : const Color(0xFFEAF8F4),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            service['icon'] as IconData,
+            size: 30,
+            color: service['color'] as Color,
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 4,
+            ),
+            child: Text(
+              service['name'] as String,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+},
+
               ),
             ],
           ),
