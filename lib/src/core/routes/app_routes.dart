@@ -7,6 +7,10 @@ import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/journey/presentation/journey_selection_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../../features/blood_donation/presentation/blood_donation_screen.dart';
+import '../../features/blood_donation/presentation/blood_request_screen.dart';
+import '../../features/blood_donation/presentation/donor_list_screen.dart';
+import '../../features/home/presentation/adult_home_screen.dart';
 import 'route_names.dart';
 
 class AppRoutes {
@@ -36,6 +40,18 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => const JourneySelectionScreen(),
         );
+
+              case RouteNames.adultHome:
+        return MaterialPageRoute(builder: (_) => const AdultHomeScreen());
+
+      case RouteNames.bloodDonation:
+        return MaterialPageRoute(builder: (_) => const BloodDonationScreen());
+
+      case RouteNames.bloodRequest:
+        return MaterialPageRoute(builder: (_) => const BloodRequestScreen());
+
+      case RouteNames.donorList:
+        return MaterialPageRoute(builder: (_) => const DonorListScreen());
 
       default:
         return MaterialPageRoute(
