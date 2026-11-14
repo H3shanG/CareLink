@@ -12,4 +12,8 @@ class RouteNames {
   static const String bloodDonation = '/blood-donation';
   static const String bloodRequest = '/blood-donation/request';
   static const String donorList = '/blood-donation/donors';
+  static const String caregiverList = '/caregiver';
+  static const String caregiverProfile = '/caregiver/profile';
+  static const String caregiverBooking = '/caregiver/booking';
+  static const String bookingDetails = '/booking-details';
 }

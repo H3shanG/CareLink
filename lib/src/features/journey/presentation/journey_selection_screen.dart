@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/routes/route_names.dart';
 
 class JourneySelectionScreen extends StatelessWidget {
   const JourneySelectionScreen({super.key});
@@ -49,7 +50,7 @@ class JourneySelectionScreen extends StatelessWidget {
                 title: 'Adult / Patient Care',
                 description: 'Blood donation, caregivers, medicine, transport, equipment and more.',
                 onTap: () {
-                  // Navigation to Adult Home will be added when routes are ready.
+                  Navigator.pushNamed(context, RouteNames.adultHome);
                 },
               ),
 
@@ -61,7 +62,7 @@ class JourneySelectionScreen extends StatelessWidget {
                 title: 'Baby / Child Care',
                 description: 'Childcare, pediatric services, medicine, equipment and more.',
                 onTap: () {
-                  // Navigation to Child Home will be added when routes are ready.
+                // Navigation to child Home will be added when routes ready... .
                 },
               ),
             ],

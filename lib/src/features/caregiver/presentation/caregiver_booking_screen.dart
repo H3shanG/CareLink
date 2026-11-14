@@ -122,7 +122,7 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
                     fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _service,
+              initialValue: _service,
               decoration: const InputDecoration(
                 labelText: 'Service',
                 border: OutlineInputBorder(),
