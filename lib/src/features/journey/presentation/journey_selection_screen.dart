@@ -3,6 +3,7 @@ import '../../../core/routes/route_names.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 
+
 class JourneySelectionScreen extends StatelessWidget {
   const JourneySelectionScreen({super.key});
 
@@ -49,26 +50,31 @@ class JourneySelectionScreen extends StatelessWidget {
                 title: 'Adult / Patient Care',
                 description: 'Blood donation, caregivers, medicine, transport, equipment and more.',
                 onTap: () {
-                  // Navigation to Adult Home will be added when routes are ready.
+                  Navigator.pushNamed(context, RouteNames.adultHome);
                 },
               ),
 
               const SizedBox(height: AppSizes.lg),
 
-              
-            _JourneyCard(
-            imagePath: 'assets/images/onboarding/child_care.png',
-             color: const Color(0xFFDDF0DC),
-            title: 'Baby / Child Care',
-            description:'Childcare, pediatric services, medicine, equipment and more.',
-             onTap: () {
-            Navigator.pushNamed(
-             context,
-            RouteNames.childHome,
-            );
-            },
-          ),
+              _JourneyCard(
+                imagePath: 'assets/images/onboarding/child_care.png',
+                color: const Color(0xFFDDF0DC),
+                title: 'Baby / Child Care',
+                description: 'Childcare, pediatric services, medicine, equipment and more.',
+                onTap: () {
+                  // Navigation to child Home will be added when routes ready... .
+                },
+              ),
 
+              _JourneyCard(
+                imagePath: 'assets/images/onboarding/child_care.png',
+                color: const Color(0xFFDDF0DC),
+                title: 'Baby / Child Care',
+                description: 'Childcare, pediatric services, medicine, equipment and more.',
+                onTap: () {
+                  Navigator.pushNamed(context, RouteNames.childHome);
+                },
+              ),
             ],
           ),
         ),

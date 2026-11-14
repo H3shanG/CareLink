@@ -12,6 +12,12 @@ import '../../features/blood_donation/presentation/blood_request_screen.dart';
 import '../../features/blood_donation/presentation/donor_list_screen.dart';
 import '../../features/home/presentation/adult_home_screen.dart';
 import 'route_names.dart';
+import '../../features/caregiver/presentation/caregiver_list_screen.dart';
+import '../../features/caregiver/presentation/caregiver_profile_screen.dart';
+import '../../features/caregiver/presentation/caregiver_booking_screen.dart';
+import '../../features/caregiver/data/caregiver_model.dart';
+import '../../features/booking/presentation/booking_details_screen.dart';
+import '../../features/booking/data/booking_model.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -41,7 +47,7 @@ class AppRoutes {
           builder: (_) => const JourneySelectionScreen(),
         );
 
-              case RouteNames.adultHome:
+      case RouteNames.adultHome:
         return MaterialPageRoute(builder: (_) => const AdultHomeScreen());
 
         case RouteNames.childHome:
@@ -55,7 +61,27 @@ class AppRoutes {
 
       case RouteNames.donorList:
         return MaterialPageRoute(builder: (_) => const DonorListScreen());
+      case RouteNames.caregiverList:
+        return MaterialPageRoute(builder: (_) => const CaregiverListScreen());
 
+      case RouteNames.caregiverProfile:
+        final caregiver = settings.arguments as Caregiver;
+        return MaterialPageRoute(
+          builder: (_) => CaregiverProfileScreen(caregiver: caregiver),
+        );
+
+      case RouteNames.caregiverBooking:
+        final caregiver = settings.arguments as Caregiver;
+        return MaterialPageRoute(
+          builder: (_) => CaregiverBookingScreen(caregiver: caregiver),
+        );
+
+      case RouteNames.bookingDetails:
+        final booking = settings.arguments as Booking;
+        return MaterialPageRoute(
+          builder: (_) => BookingDetailsScreen(booking: booking),
+        );
+        
       default:
         return MaterialPageRoute(
           builder: (_) =>
