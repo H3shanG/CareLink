@@ -56,15 +56,7 @@ class JourneySelectionScreen extends StatelessWidget {
 
               const SizedBox(height: AppSizes.lg),
 
-              _JourneyCard(
-                imagePath: 'assets/images/onboarding/child_care.png',
-                color: const Color(0xFFDDF0DC),
-                title: 'Baby / Child Care',
-                description: 'Childcare, pediatric services, medicine, equipment and more.',
-                onTap: () {
-                  // Navigation to child Home will be added when routes ready... .
-                },
-              ),
+             
 
               _JourneyCard(
                 imagePath: 'assets/images/onboarding/child_care.png',
