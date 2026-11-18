@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../data/caregiver_model.dart';
 import 'caregiver_profile_screen.dart';
+import '../data/caregiver_repository.dart';
 
 class CaregiverListScreen extends StatefulWidget {
   const CaregiverListScreen({super.key});
@@ -10,14 +12,18 @@ class CaregiverListScreen extends StatefulWidget {
 }
 
 class _CaregiverListScreenState extends State<CaregiverListScreen> {
+  final CaregiverRepository _repo = CaregiverRepository();
+  late final Stream<List<Caregiver>> _stream = _repo.watchCaregivers();
+
   final List<String> _filters = ['All', 'Nurse', 'Home Care', 'Elder Care'];
   String _selected = 'All';
   String _query = '';
 
-  List<Caregiver> get _results {
-    return dummyCaregivers.where((c) {
+  List<Caregiver> _applyFilters(List<Caregiver> all) {
+    return all.where((c) {
       final matchSearch = c.name.toLowerCase().contains(_query.toLowerCase());
-      final matchFilter = _selected == 'All' ||
+      final matchFilter =
+          _selected == 'All' ||
           c.role.contains(_selected) ||
           c.tags.contains(_selected);
       return matchSearch && matchFilter;
@@ -26,7 +32,6 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final results = _results;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Caregiver / Nurse Booking'),
@@ -72,13 +77,30 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
             ),
           ),
           Expanded(
-            child: results.isEmpty
-                ? const Center(child: Text('No caregivers found'))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: results.length,
-                    itemBuilder: (_, i) => _CaregiverCard(caregiver: results[i]),
-                  ),
+            child: StreamBuilder<List<Caregiver>>(
+              stream: _stream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Could not load caregivers'));
+                }
+
+                final results = _applyFilters(snapshot.data ?? []);
+
+                if (results.isEmpty) {
+                  return const Center(child: Text('No caregivers found'));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: results.length,
+                  itemBuilder: (_, i) => _CaregiverCard(caregiver: results[i]),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -126,16 +148,24 @@ class _CaregiverCard extends StatelessWidget {
                         Text(
                           caregiver.name,
                           style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                        Text(caregiver.role,
-                            style: const TextStyle(color: Colors.grey)),
+                        Text(
+                          caregiver.role,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                         Row(
                           children: [
-                            const Icon(Icons.star,
-                                size: 14, color: Colors.amber),
+                            const Icon(
+                              Icons.star,
+                              size: 14,
+                              color: Colors.amber,
+                            ),
                             Text(
-                                ' ${caregiver.rating} (${caregiver.reviews} reviews)'),
+                              ' ${caregiver.rating} (${caregiver.reviews} reviews)',
+                            ),
                           ],
                         ),
                       ],
@@ -144,8 +174,10 @@ class _CaregiverCard extends StatelessWidget {
                   Column(
                     children: [
                       const Icon(Icons.favorite_border, color: Colors.red),
-                      Text(caregiver.distance,
-                          style: const TextStyle(fontSize: 12)),
+                      Text(
+                        caregiver.distance,
+                        style: const TextStyle(fontSize: 12),
+                      ),
                     ],
                   ),
                 ],
@@ -155,10 +187,12 @@ class _CaregiverCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 4,
                 children: caregiver.tags
-                    .map((t) => Chip(
-                          label: Text(t, style: const TextStyle(fontSize: 11)),
-                          visualDensity: VisualDensity.compact,
-                        ))
+                    .map(
+                      (t) => Chip(
+                        label: Text(t, style: const TextStyle(fontSize: 11)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    )
                     .toList(),
               ),
             ],
