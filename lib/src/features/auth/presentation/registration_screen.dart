@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/asset_paths.dart';
 import '../../../core/routes/route_names.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -28,6 +29,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
 
+    final AuthService _authService = AuthService();
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -38,7 +41,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     super.dispose();
   }
 
-  Future<void> _register() async {
+   Future<void> _register() async {
     final isValid = _formKey.currentState?.validate() ?? false;
 
     if (!isValid) return;
@@ -47,17 +50,38 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       _isLoading = true;
     });
 
-    // Temporary fake delay.
-    // Later replace this with Firebase/API registration.
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await _authService.register(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
+      Navigator.pushNamed(context, RouteNames.roleSelection);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
 
-    Navigator.pushNamed(context, RouteNames.roleSelection);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AuthService.messageFromCode(e.code))),
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong. Please try again'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
