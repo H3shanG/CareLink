@@ -33,4 +33,9 @@ class BookingRepository {
 
     return doc.id;
   }
+
+  // Marks the booking as cancelled in Firestore.
+  Future<void> cancelBooking(String docId) {
+    return _col.doc(docId).update({'status': 'cancelled'});
+  }
 }

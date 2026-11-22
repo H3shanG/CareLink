@@ -101,14 +101,15 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
     setState(() => _isSaving = true);
 
     try {
-      await _bookingRepo.createBooking(booking);
+      final docId = await _bookingRepo.createBooking(booking);
 
       if (!mounted) return;
 
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => BookingDetailsScreen(booking: booking),
+          builder: (_) =>
+              BookingDetailsScreen(booking: booking.copyWith(docId: docId)),
         ),
       );
     } catch (_) {
