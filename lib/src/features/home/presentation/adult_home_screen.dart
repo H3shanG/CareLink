@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/route_names.dart';
+import '../../blood_donation/presentation/blood_donation_screen.dart';
+
 
 
 const Color _danger = Color(0xFFE53935);
@@ -172,7 +174,7 @@ class _AdultHomeScreenState extends State<AdultHomeScreen> {
         Text(title,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         TextButton(
-          onPressed: () {},
+          onPressed: () => _showAllServices(context),
           child: const Text('See All', style: TextStyle(fontSize: 12)),
         ),
       ],
@@ -218,7 +220,7 @@ class _AdultHomeScreenState extends State<AdultHomeScreen> {
     );
   }
 
-  // TODO: Mem
+  
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       currentIndex: _navIndex,
@@ -236,4 +238,57 @@ class _AdultHomeScreenState extends State<AdultHomeScreen> {
       ],
     );
   }
+}
+
+void _showAllServices(BuildContext context) {
+  final services = <Map<String, dynamic>>[
+    {'title': 'Blood Donation', 'icon': Icons.bloodtype, 'color': Colors.red, 'screen': const BloodDonationScreen()},
+    {'title': 'Caregiver Booking', 'icon': Icons.person, 'color': Colors.green, 'screen': null},
+    {'title': 'Medicine & Pharmacy', 'icon': Icons.medication, 'color': Colors.blue, 'screen': null},
+    {'title': 'Emergency Transport', 'icon': Icons.local_shipping, 'color': Colors.red, 'screen': null},
+    {'title': 'Medical Equipment', 'icon': Icons.accessible, 'color': Colors.indigo, 'screen': null},
+    {'title': 'Organ Donor Registry', 'icon': Icons.favorite, 'color': Colors.pink, 'screen': null},
+  ];
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (sheetContext) => Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'All Adult Care Services',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ...services.map((s) => ListTile(
+                leading: Icon(s['icon'] as IconData, color: s['color'] as Color),
+                title: Text(s['title'] as String),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  final screen = s['screen'] as Widget?;
+                  if (screen != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => screen),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${s['title']} is coming soon')),
+                    );
+                  }
+                },
+              )),
+          const SizedBox(height: 8),
+        ],
+      ),
+    ),
+  );
 }

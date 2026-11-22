@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/donor.dart';
 
-// AppColors eke 'danger' nathi nisa local color eka (red)
+
 const Color _danger = Color(0xFFE53935);
 
-// ---------------------------------------------------------------------------
-// Filter model + bottom sheet (Blood Donation screen ekath use karanawa)
-// ---------------------------------------------------------------------------
+
 class DonorFilter {
   final double maxDistanceKm;
   final bool onlyAvailable;
@@ -97,9 +95,9 @@ class _FilterSheetState extends State<_FilterSheet> {
   }
 }
 
-// ---------------------------------------------------------------------------
+
 // Reusable donor card
-// ---------------------------------------------------------------------------
+
 class DonorCard extends StatelessWidget {
   final Donor donor;
   final VoidCallback? onCall;
@@ -196,9 +194,9 @@ class DonorCard extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
+
 // Full donor list screen
-// ---------------------------------------------------------------------------
+
 class DonorListScreen extends StatefulWidget {
   final String? initialBloodGroup;
   const DonorListScreen({super.key, this.initialBloodGroup});
@@ -208,7 +206,7 @@ class DonorListScreen extends StatefulWidget {
 }
 
 class _DonorListScreenState extends State<DonorListScreen> {
-  late String? _group = widget.initialBloodGroup; // null = All
+  late String? _group = widget.initialBloodGroup; 
   DonorFilter _filter = const DonorFilter();
   String _query = '';
 
@@ -307,7 +305,6 @@ class _DonorListScreenState extends State<DonorListScreen> {
       ),
     );
   }
-
   Widget _chip(String label, bool selected, VoidCallback onTap) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
