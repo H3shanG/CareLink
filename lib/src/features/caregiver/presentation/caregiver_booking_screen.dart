@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+
 import '../data/caregiver_model.dart';
 import '../../booking/data/booking_model.dart';
 import '../../booking/presentation/booking_details_screen.dart';
+import '../../booking/data/booking_repository.dart';
 
 class CaregiverBookingScreen extends StatefulWidget {
   final Caregiver caregiver;
   const CaregiverBookingScreen({super.key, required this.caregiver});
 
   @override
-  State<CaregiverBookingScreen> createState() =>
-      _CaregiverBookingScreenState();
+  State<CaregiverBookingScreen> createState() => _CaregiverBookingScreenState();
 }
 
 class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
@@ -27,6 +28,9 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
   TimeOfDay? _start;
   TimeOfDay? _end;
 
+  final BookingRepository _bookingRepo = BookingRepository();
+  bool _isSaving = false;
+
   @override
   void dispose() {
     _addressController.dispose();
@@ -35,8 +39,8 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
 
   double get _hours {
     if (_start == null || _end == null) return 0;
-    final diff = (_end!.hour * 60 + _end!.minute) -
-        (_start!.hour * 60 + _start!.minute);
+    final diff =
+        (_end!.hour * 60 + _end!.minute) - (_start!.hour * 60 + _start!.minute);
     return diff > 0 ? diff / 60 : 0;
   }
 
@@ -72,7 +76,7 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
     }
   }
 
-  void _confirm() {
+  Future<void> _confirm() async {
     if (!_formKey.currentState!.validate()) return;
     if (_date == null || _start == null || _end == null) {
       _showMessage('Please select date, start time and end time');
@@ -94,17 +98,29 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
       total: _total,
     );
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BookingDetailsScreen(booking: booking),
-      ),
-    );
+    setState(() => _isSaving = true);
+
+    try {
+      await _bookingRepo.createBooking(booking);
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BookingDetailsScreen(booking: booking),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _showMessage('Could not save your booking. Please try again');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   void _showMessage(String text) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(text)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   @override
@@ -117,9 +133,10 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('${c.name} • ${c.role}',
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              '${c.name} • ${c.role}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: _service,
@@ -146,9 +163,7 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
                   child: _PickerTile(
                     icon: Icons.access_time,
                     label: 'Start',
-                    value: _start == null
-                        ? 'Select'
-                        : _start!.format(context),
+                    value: _start == null ? 'Select' : _start!.format(context),
                     onTap: () => _pickTime(true),
                   ),
                 ),
@@ -157,8 +172,7 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
                   child: _PickerTile(
                     icon: Icons.access_time_filled,
                     label: 'End',
-                    value:
-                        _end == null ? 'Select' : _end!.format(context),
+                    value: _end == null ? 'Select' : _end!.format(context),
                     onTap: () => _pickTime(false),
                   ),
                 ),
@@ -188,10 +202,15 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                      '${_hours.toStringAsFixed(1)} hrs × Rs. ${c.pricePerHour}'),
-                  Text('Rs. $_total',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
+                    '${_hours.toStringAsFixed(1)} hrs × Rs. ${c.pricePerHour}',
+                  ),
+                  Text(
+                    'Rs. $_total',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -204,8 +223,14 @@ class _CaregiverBookingScreenState extends State<CaregiverBookingScreen> {
           child: SizedBox(
             height: 50,
             child: ElevatedButton(
-              onPressed: _confirm,
-              child: const Text('Confirm Booking'),
+              onPressed: _isSaving ? null : _confirm,
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Confirm Booking'),
             ),
           ),
         ),
