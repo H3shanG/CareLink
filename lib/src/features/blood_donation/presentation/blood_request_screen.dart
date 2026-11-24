@@ -85,7 +85,7 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
       contactNumber: _contactCtrl.text.trim(),
       note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
     );
-    // TODO: backend / repository ekata send karanna
+    // TODO: backend / repositor
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('Blood request posted successfully')));
     widget.onSubmitted?.call(request);
