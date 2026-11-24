@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/asset_paths.dart';
 import '../../../core/routes/route_names.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,6 +25,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
   bool _isLoading = false;
 
+  final AuthService _authService = AuthService();
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -31,7 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     super.dispose();
   }
-
   Future<void> _login() async {
     final isValid = _formKey.currentState?.validate() ?? false;
 
@@ -41,17 +43,28 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    // Temporary fake delay.
-    // Later replace this with Firebase/API authentication.
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await _authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
+      Navigator.pushReplacementNamed(context, RouteNames.journeySelection);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
 
-    Navigator.pushReplacementNamed(context, RouteNames.journeySelection);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AuthService.messageFromCode(e.code))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override

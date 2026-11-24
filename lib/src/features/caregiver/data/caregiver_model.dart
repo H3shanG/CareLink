@@ -1,4 +1,5 @@
 class Caregiver {
+  final String id;
   final String name;
   final String role;
   final double rating;
@@ -11,6 +12,7 @@ class Caregiver {
   final List<String> languages;
 
   const Caregiver({
+    this.id = '',
     required this.name,
     required this.role,
     required this.rating,
@@ -22,6 +24,39 @@ class Caregiver {
     required this.about,
     required this.languages,
   });
+
+  // Firestore document එකක් Caregiver object එකක් බවට හරවන්න
+  factory Caregiver.fromMap(String id, Map<String, dynamic> map) {
+    return Caregiver(
+      id: id,
+      name: map['name'] ?? '',
+      role: map['role'] ?? '',
+      rating: (map['rating'] as num?)?.toDouble() ?? 0,
+      reviews: (map['reviews'] as num?)?.toInt() ?? 0,
+      distance: map['distance'] ?? '',
+      tags: List<String>.from(map['tags'] ?? const []),
+      pricePerHour: (map['pricePerHour'] as num?)?.toInt() ?? 0,
+      experienceYears: (map['experienceYears'] as num?)?.toInt() ?? 0,
+      about: map['about'] ?? '',
+      languages: List<String>.from(map['languages'] ?? const []),
+    );
+  }
+
+  // Caregiver object එකක් Firestore එකට save කරන්න හරවන්න
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'role': role,
+      'rating': rating,
+      'reviews': reviews,
+      'distance': distance,
+      'tags': tags,
+      'pricePerHour': pricePerHour,
+      'experienceYears': experienceYears,
+      'about': about,
+      'languages': languages,
+    };
+  }
 }
 
 const List<Caregiver> dummyCaregivers = [
@@ -34,7 +69,8 @@ const List<Caregiver> dummyCaregivers = [
     tags: ['Elder Care', 'Patient Care', 'Home Visit'],
     pricePerHour: 650,
     experienceYears: 8,
-    about: 'Experienced registered nurse providing professional home care for elderly and post-treatment patients.',
+    about:
+        'Experienced registered nurse providing professional home care for elderly and post-treatment patients.',
     languages: ['Sinhala', 'English'],
   ),
   Caregiver(
@@ -46,7 +82,8 @@ const List<Caregiver> dummyCaregivers = [
     tags: ['Home Care', 'Post-surgery', 'Elder Care'],
     pricePerHour: 500,
     experienceYears: 5,
-    about: 'Caring and patient caregiver helping with daily activities and recovery after surgery.',
+    about:
+        'Caring and patient caregiver helping with daily activities and recovery after surgery.',
     languages: ['Sinhala', 'Tamil'],
   ),
   Caregiver(
@@ -58,7 +95,8 @@ const List<Caregiver> dummyCaregivers = [
     tags: ['Patient Care', 'Child Care', 'Home Visit'],
     pricePerHour: 600,
     experienceYears: 6,
-    about: 'Dedicated nurse with experience in patient and child care visits at home.',
+    about:
+        'Dedicated nurse with experience in patient and child care visits at home.',
     languages: ['Sinhala', 'English'],
   ),
 ];
