@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/asset_paths.dart';
 import '../../../core/routes/route_names.dart';
+import '../../auth/services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -27,7 +28,13 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    Navigator.pushReplacementNamed(context, RouteNames.onboarding);
+    // If a user is already signed in, skip onboarding and login
+    final isSignedIn = AuthService.currentUser != null;
+
+    Navigator.pushReplacementNamed(
+      context,
+      isSignedIn ? RouteNames.journeySelection : RouteNames.onboarding,
+    );
   }
 
   @override
