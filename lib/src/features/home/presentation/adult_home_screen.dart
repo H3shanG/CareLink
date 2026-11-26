@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../requests/presentation/urgent_request_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/route_names.dart';
 import '../../blood_donation/presentation/blood_donation_screen.dart';
 import '../../equipment_rental/presentation/equipment_rental_screen.dart';
 import '../../organ_donor/presentation/organ_donor_screen.dart';
 import '../../profile/notifications/presentation/notifications_screen.dart';
+import '../../requests/presentation/my_requests_screen.dart';
+import '../../messages/presentation/messages_screen.dart';
 
 const Color _danger = Color(0xFFE53935);
 
@@ -208,7 +211,14 @@ class _AdultHomeScreenState extends State<AdultHomeScreen> {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () => _open(_Routes.emergency),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const UrgentRequestScreen(),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _danger,
                     foregroundColor: Colors.white,
@@ -304,13 +314,25 @@ class _AdultHomeScreenState extends State<AdultHomeScreen> {
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       currentIndex: _navIndex,
+
       onTap: (i) {
-        if (i == 3) {
+        if (i == 1) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MyRequestsScreen()),
+          );
+        } else if (i == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MessagesScreen()),
+          );
+        } else if (i == 3) {
           Navigator.pushNamed(context, RouteNames.profile);
         } else {
           setState(() => _navIndex = i);
         }
       },
+
       type: BottomNavigationBarType.fixed,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.textSecondary,
