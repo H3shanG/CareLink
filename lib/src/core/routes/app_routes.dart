@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../features/home/presentation/child_home_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/registration_screen.dart';
@@ -18,6 +19,9 @@ import '../../features/caregiver/presentation/caregiver_booking_screen.dart';
 import '../../features/caregiver/data/caregiver_model.dart';
 import '../../features/booking/presentation/booking_details_screen.dart';
 import '../../features/booking/data/booking_model.dart';
+import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/equipment_rental/presentation/equipment_rental_screen.dart';
+import '../../features/organ_donor/presentation/organ_donor_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -50,8 +54,17 @@ class AppRoutes {
       case RouteNames.adultHome:
         return MaterialPageRoute(builder: (_) => const AdultHomeScreen());
 
-        case RouteNames.childHome:
-         return MaterialPageRoute(builder: (_) => const ChildHomeScreen(),);
+      case RouteNames.profile:
+        return MaterialPageRoute(builder: (_) => const ProfileScreen());
+
+      case RouteNames.equipmentRental:
+        return MaterialPageRoute(builder: (_) => const EquipmentRentalScreen());
+
+      case RouteNames.organDonor:
+        return MaterialPageRoute(builder: (_) => const OrganDonorScreen());
+
+      case RouteNames.childHome:
+        return MaterialPageRoute(builder: (_) => const ChildHomeScreen());
 
       case RouteNames.bloodDonation:
         return MaterialPageRoute(builder: (_) => const BloodDonationScreen());
@@ -81,7 +94,7 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => BookingDetailsScreen(booking: booking),
         );
-        
+
       default:
         return MaterialPageRoute(
           builder: (_) =>

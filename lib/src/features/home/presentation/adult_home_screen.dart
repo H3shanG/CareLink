@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../requests/presentation/urgent_request_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/route_names.dart';
 import '../../blood_donation/presentation/blood_donation_screen.dart';
+import '../../equipment_rental/presentation/equipment_rental_screen.dart';
+import '../../organ_donor/presentation/organ_donor_screen.dart';
+import '../../profile/notifications/presentation/notifications_screen.dart';
+import '../../requests/presentation/my_requests_screen.dart';
+import '../../messages/presentation/messages_screen.dart';
 
 const Color _danger = Color(0xFFE53935);
 
@@ -17,8 +23,8 @@ class _Routes {
   // static const caregiver = '/caregiver';
   static const pharmacy = '/pharmacy';
   static const emergency = '/emergency';
-  static const equipmentRental = '/equipment-rental';
-  static const organDonor = '/organ-donor';
+  static const equipmentRental = RouteNames.equipmentRental;
+  static const organDonor = RouteNames.organDonor;
 }
 
 class _Service {
@@ -115,7 +121,14 @@ class _AdultHomeScreenState extends State<AdultHomeScreen> {
             ),
             const Spacer(),
             IconButton(
-              onPressed: () {},
+onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const NotificationsScreen(),
+    ),
+  );
+},
               icon: const Icon(
                 Icons.notifications_none,
                 color: AppColors.textPrimary,
@@ -198,7 +211,14 @@ class _AdultHomeScreenState extends State<AdultHomeScreen> {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () => _open(_Routes.emergency),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const UrgentRequestScreen(),
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _danger,
                     foregroundColor: Colors.white,
@@ -294,7 +314,25 @@ class _AdultHomeScreenState extends State<AdultHomeScreen> {
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       currentIndex: _navIndex,
-      onTap: (i) => setState(() => _navIndex = i),
+
+      onTap: (i) {
+        if (i == 1) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MyRequestsScreen()),
+          );
+        } else if (i == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MessagesScreen()),
+          );
+        } else if (i == 3) {
+          Navigator.pushNamed(context, RouteNames.profile);
+        } else {
+          setState(() => _navIndex = i);
+        }
+      },
+
       type: BottomNavigationBarType.fixed,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.textSecondary,
@@ -349,13 +387,13 @@ void _showAllServices(BuildContext context) {
       'title': 'Medical Equipment',
       'icon': Icons.accessible,
       'color': Colors.indigo,
-      'screen': null,
+'screen': const EquipmentRentalScreen(),
     },
     {
       'title': 'Organ Donor Registry',
       'icon': Icons.favorite,
       'color': Colors.pink,
-      'screen': null,
+'screen': const OrganDonorScreen(),
     },
   ];
 
