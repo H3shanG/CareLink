@@ -20,7 +20,7 @@ class AdultHomeScreen extends StatefulWidget {
 }
 
 class _Routes {
-  static const caregiver = '/caregiver';
+  // static const caregiver = '/caregiver';
   static const pharmacy = '/pharmacy';
   static const emergency = '/emergency';
   static const equipmentRental = RouteNames.equipmentRental;
@@ -121,14 +121,14 @@ class _AdultHomeScreenState extends State<AdultHomeScreen> {
             ),
             const Spacer(),
             IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const NotificationsScreen(),
-                  ),
-                );
-              },
+onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const NotificationsScreen(),
+    ),
+  );
+},
               icon: const Icon(
                 Icons.notifications_none,
                 color: AppColors.textPrimary,
@@ -387,13 +387,13 @@ void _showAllServices(BuildContext context) {
       'title': 'Medical Equipment',
       'icon': Icons.accessible,
       'color': Colors.indigo,
-      'screen': const EquipmentRentalScreen(),
+'screen': const EquipmentRentalScreen(),
     },
     {
       'title': 'Organ Donor Registry',
       'icon': Icons.favorite,
       'color': Colors.pink,
-      'screen': const OrganDonorScreen(),
+'screen': const OrganDonorScreen(),
     },
   ];
 
