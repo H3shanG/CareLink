@@ -15,6 +15,7 @@ class ChildMyRequestsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
+
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -25,10 +26,12 @@ class ChildMyRequestsScreen extends StatelessWidget {
         if (snapshot.hasError || snapshot.data == null) {
           return Scaffold(
             backgroundColor: const Color(0xFFF9FAFC),
+
             appBar: AppBar(
               title: const Text('My Requests'),
               backgroundColor: Colors.white,
             ),
+
             body: const Center(
               child: Text('Please log in to view your requests.'),
             ),
@@ -50,7 +53,9 @@ class _ChildMyRequestsContent extends StatefulWidget {
 }
 
 class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
-  // Firebase backend stores
+  // ==========================================
+  // FIREBASE BACKEND STORES
+  // ==========================================
 
   final ChildCareRequestStore _childCareStore = ChildCareRequestStore();
 
@@ -59,13 +64,24 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
 
   final BabyEquipmentRentalStore _rentalStore = BabyEquipmentRentalStore();
 
-  // Firebase streams
+  final PediatricianAppointmentStore _appointmentStore =
+      PediatricianAppointmentStore();
+
+  // ==========================================
+  // FIREBASE STREAMS
+  // ==========================================
 
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _childCareStream;
 
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _medicineStream;
 
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _rentalStream;
+
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _appointmentStream;
+
+  // ==========================================
+  // INITIALIZE FIREBASE STREAMS
+  // ==========================================
 
   @override
   void initState() {
@@ -76,13 +92,17 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
     _medicineStream = _medicineStore.getRequests();
 
     _rentalStream = _rentalStore.getRentals();
+
+    _appointmentStream = _appointmentStore.getAppointments();
   }
 
-  // Convert Firebase timestamps to readable text
+  // ==========================================
+  // FORMAT FIRESTORE VALUES
+  // ==========================================
 
   String _formatValue(dynamic value) {
     if (value is Timestamp) {
-      return value.toDate().toString().substring(0, 16);
+      return value.toDate().toLocal().toString().substring(0, 16);
     }
 
     if (value == null) {
@@ -92,7 +112,9 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
     return value.toString();
   }
 
-  // Convert Firestore documents into displayable maps
+  // ==========================================
+  // CONVERT FIRESTORE DOCUMENTS
+  // ==========================================
 
   List<Map<String, String>> _convertDocuments(
     QuerySnapshot<Map<String, dynamic>>? snapshot,
@@ -125,9 +147,11 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
       final request = <String, String>{};
 
       for (final entry in data.entries) {
-        // Do not display internal database fields
+        // Hide internal database fields
 
-        if (entry.key == 'userId' || entry.key == 'updatedAt') {
+        if (entry.key == 'userId' ||
+            entry.key == 'updatedAt' ||
+            entry.key == 'doctorId') {
           continue;
         }
 
@@ -140,7 +164,9 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
     }).toList();
   }
 
-  // Improve the displayed field labels
+  // ==========================================
+  // FORMAT DISPLAY LABELS
+  // ==========================================
 
   String _formatLabel(String key) {
     switch (key) {
@@ -172,6 +198,9 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
       case 'doctor':
         return 'Doctor';
 
+      case 'appointmentAt':
+        return 'Requested Appointment';
+
       case 'appointmentDate':
         return 'Appointment Date';
 
@@ -189,12 +218,15 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
     }
   }
 
-  // Original empty requests screen
+  // ==========================================
+  // EMPTY REQUESTS SCREEN
+  // ==========================================
 
   Widget _buildEmptyState() {
     return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+
         children: [
           Icon(Icons.assignment_outlined, size: 70, color: Colors.grey),
 
@@ -202,6 +234,7 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
 
           Text(
             'No Requests Yet',
+
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
 
@@ -213,7 +246,9 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
     );
   }
 
-  // Original request card design
+  // ==========================================
+  // REQUEST CARD DESIGN
+  // ==========================================
 
   Widget _buildRequestCard(String groupName, Map<String, String> request) {
     return Card(
@@ -257,7 +292,9 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
     );
   }
 
-  // Display all request groups
+  // ==========================================
+  // DISPLAY ALL REQUEST GROUPS
+  // ==========================================
 
   Widget _buildRequests(Map<String, List<Map<String, String>>> groups) {
     final totalRequests = groups.values.fold<int>(
@@ -288,23 +325,31 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
     );
   }
 
-  // Handle Firebase loading and errors
+  // ==========================================
+  // FIREBASE ERROR HANDLING
+  // ==========================================
 
   Widget _buildErrorState() {
     return const Center(
       child: Padding(
         padding: EdgeInsets.all(20),
+
         child: Text(
           'Unable to load requests. '
-          'Please check your connection and Firebase permissions.',
+          'Please check your connection and '
+          'Firebase permissions.',
+
           textAlign: TextAlign.center,
+
           style: TextStyle(color: Colors.red),
         ),
       ),
     );
   }
 
-  // Main user interface
+  // ==========================================
+  // MAIN USER INTERFACE
+  // ==========================================
 
   @override
   Widget build(BuildContext context) {
@@ -316,6 +361,7 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
         backgroundColor: Colors.white,
       ),
 
+      // SICK CHILD CARE STREAM
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _childCareStream,
 
@@ -323,6 +369,8 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
           if (childCareSnapshot.hasError) {
             return _buildErrorState();
           }
+
+          // PEDIATRIC MEDICINE STREAM
 
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: _medicineStream,
@@ -332,6 +380,8 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
                 return _buildErrorState();
               }
 
+              // BABY EQUIPMENT RENTAL STREAM
+
               return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _rentalStream,
 
@@ -340,49 +390,60 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
                     return _buildErrorState();
                   }
 
-                  // Wait for all Firebase collections
+                  // PEDIATRICIAN APPOINTMENT STREAM
 
-                  if ((childCareSnapshot.connectionState ==
-                              ConnectionState.waiting &&
-                          !childCareSnapshot.hasData) ||
-                      (medicineSnapshot.connectionState ==
-                              ConnectionState.waiting &&
-                          !medicineSnapshot.hasData) ||
-                      (rentalSnapshot.connectionState ==
-                              ConnectionState.waiting &&
-                          !rentalSnapshot.hasData)) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+                  return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: _appointmentStream,
 
-                  final groups = <String, List<Map<String, String>>>{
-                    // Firebase collections
+                    builder: (context, appointmentSnapshot) {
+                      if (appointmentSnapshot.hasError) {
+                        return _buildErrorState();
+                      }
 
-                    'Sick Child Care': _convertDocuments(
-                      childCareSnapshot.data,
-                    ),
+                      // Wait until all Firebase
+                      // collections have loaded
 
-                    'Pediatric Medicine': _convertDocuments(
-                      medicineSnapshot.data,
-                    ),
+                      if (!childCareSnapshot.hasData ||
+                          !medicineSnapshot.hasData ||
+                          !rentalSnapshot.hasData ||
+                          !appointmentSnapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                    'Baby Equipment Rental': _convertDocuments(
-                      rentalSnapshot.data,
-                    ),
+                      final groups = <String, List<Map<String, String>>>{
+                        // SICK CHILD CARE
 
-                    // Temporary lists until the remaining
-                    // backend modules are implemented
-                    'Pediatrician Appointment': PediatricianAppointmentStore
-                        .appointments
-                        .reversed
-                        .toList(),
+                        'Sick Child Care': _convertDocuments(
+                          childCareSnapshot.data,
+                        ),
 
-                    'Emergency Transport': EmergencyTransportRequestStore
-                        .requests
-                        .reversed
-                        .toList(),
-                  };
+                        // PEDIATRIC MEDICINE
+                        'Pediatric Medicine': _convertDocuments(
+                          medicineSnapshot.data,
+                        ),
 
-                  return _buildRequests(groups);
+                        // BABY EQUIPMENT RENTAL
+                        'Baby Equipment Rental': _convertDocuments(
+                          rentalSnapshot.data,
+                        ),
+
+                        // PEDIATRICIAN APPOINTMENT
+                        'Pediatrician Appointment': _convertDocuments(
+                          appointmentSnapshot.data,
+                        ),
+
+                        // EMERGENCY TRANSPORT
+                        // Temporary storage until the
+                        // final backend is implemented
+                        'Emergency Transport': EmergencyTransportRequestStore
+                            .requests
+                            .reversed
+                            .toList(),
+                      };
+
+                      return _buildRequests(groups);
+                    },
+                  );
                 },
               );
             },
