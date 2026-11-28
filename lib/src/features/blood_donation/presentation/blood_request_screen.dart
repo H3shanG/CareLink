@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../data/blood_request_repository.dart';
 import '../models/blood_request.dart';
 import '../models/donor.dart';
 
-
 const Color _danger = Color(0xFFE53935);
-
 
 class BloodRequestScreen extends StatelessWidget {
   const BloodRequestScreen({super.key});
@@ -20,8 +19,10 @@ class BloodRequestScreen extends StatelessWidget {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: true,
-        title: const Text('Post Blood Request',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        title: const Text(
+          'Post Blood Request',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+        ),
       ),
       body: BloodRequestForm(onSubmitted: (_) => Navigator.pop(context)),
     );
@@ -42,6 +43,8 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
   final _hospitalCtrl = TextEditingController();
   final _contactCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  final _repo = BloodRequestRepository();
+  bool _submitting = false;
 
   String _bloodGroup = 'A+';
   int _units = 1;
@@ -68,13 +71,16 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
     if (picked != null) setState(() => _neededBy = picked);
   }
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_submitting) return;
     if (!_formKey.currentState!.validate()) return;
     if (_neededBy == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Please select the date needed')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select the date needed')),
+      );
       return;
     }
+
     final request = BloodRequest(
       patientName: _patientCtrl.text.trim(),
       bloodGroup: _bloodGroup,
@@ -85,23 +91,46 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
       contactNumber: _contactCtrl.text.trim(),
       note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
     );
-    // TODO: backend / repositor
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Blood request posted successfully')));
-    widget.onSubmitted?.call(request);
-    _formKey.currentState!.reset();
+
+    setState(() => _submitting = true);
+    try {
+      // Saves the request to Firestore (collection: blood_requests)
+      await _repo.createRequest(request).timeout(const Duration(seconds: 15));
+    } catch (e) {
+      debugPrint('Blood request failed: $e');
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not post the request. Please try again.'),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Blood request posted successfully')),
+    );
+
+    // Clear the form
+    _formKey.currentState?.reset();
     _patientCtrl.clear();
     _hospitalCtrl.clear();
     _contactCtrl.clear();
     _noteCtrl.clear();
     setState(() {
+      _submitting = false;
       _units = 1;
       _urgency = Urgency.normal;
       _neededBy = null;
     });
+
+    widget.onSubmitted?.call(request);
   }
 
-  InputDecoration _decoration(String label, {IconData? icon}) => InputDecoration(
+  InputDecoration _decoration(String label, {IconData? icon}) =>
+      InputDecoration(
         labelText: label,
         prefixIcon: icon != null ? Icon(icon, size: 20) : null,
         filled: true,
@@ -117,10 +146,12 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
       );
 
   Widget _label(String text) => Padding(
-        padding: const EdgeInsets.only(top: 18, bottom: 8),
-        child: Text(text,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-      );
+    padding: const EdgeInsets.only(top: 18, bottom: 8),
+    child: Text(
+      text,
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +163,8 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
           TextFormField(
             controller: _patientCtrl,
             decoration: _decoration('Patient name', icon: Icons.person_outline),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter patient name' : null,
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Enter patient name' : null,
           ),
 
           _label('Blood group'),
@@ -149,7 +181,10 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
                   backgroundColor: Colors.white,
                   side: const BorderSide(color: AppColors.border),
                   labelStyle: TextStyle(
-                      color: _bloodGroup == g ? Colors.white : AppColors.textPrimary),
+                    color: _bloodGroup == g
+                        ? Colors.white
+                        : AppColors.textPrimary,
+                  ),
                   onSelected: (_) => setState(() => _bloodGroup = g),
                 ),
             ],
@@ -171,12 +206,19 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
                 ),
                 Expanded(
                   child: Center(
-                    child: Text('$_units unit${_units > 1 ? 's' : ''}',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    child: Text(
+                      '$_units unit${_units > 1 ? 's' : ''}',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
                 IconButton(
-                  onPressed: _units < 10 ? () => setState(() => _units++) : null,
+                  onPressed: _units < 10
+                      ? () => setState(() => _units++)
+                      : null,
                   icon: const Icon(Icons.add_circle_outline),
                 ),
               ],
@@ -184,73 +226,99 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
           ),
 
           _label('Urgency'),
-          SegmentedButton<Urgency>(
-            showSelectedIcon: false,
-            segments: [
+          Wrap(
+            spacing: 8,
+            children: [
               for (final u in Urgency.values)
-                ButtonSegment(value: u, label: Text(u.label)),
+                ChoiceChip(
+                  label: Text(u.label),
+                  selected: _urgency == u,
+                  showCheckmark: false,
+                  selectedColor: _danger,
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: AppColors.border),
+                  labelStyle: TextStyle(
+                    color: _urgency == u ? Colors.white : AppColors.textPrimary,
+                  ),
+                  onSelected: (_) => setState(() => _urgency = u),
+                ),
             ],
-            selected: {_urgency},
-            onSelectionChanged: (s) => setState(() => _urgency = s.first),
           ),
 
-          const SizedBox(height: 18),
-          TextFormField(
-            controller: _hospitalCtrl,
-            decoration: _decoration('Hospital / Location', icon: Icons.local_hospital_outlined),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter hospital or location' : null,
-          ),
-
-          const SizedBox(height: 14),
+          _label('Needed by'),
           InkWell(
             onTap: _pickDate,
             borderRadius: BorderRadius.circular(12),
             child: InputDecorator(
-              decoration: _decoration('Needed by', icon: Icons.calendar_today_outlined),
+              decoration: _decoration('Date', icon: Icons.calendar_today),
               child: Text(
                 _neededBy == null
                     ? 'Select date'
-                    : '${_neededBy!.year}-${_neededBy!.month.toString().padLeft(2, '0')}-${_neededBy!.day.toString().padLeft(2, '0')}',
-                style: TextStyle(
-                    color: _neededBy == null ? AppColors.textSecondary : AppColors.textPrimary),
+                    : '${_neededBy!.year}-'
+                          '${_neededBy!.month.toString().padLeft(2, '0')}-'
+                          '${_neededBy!.day.toString().padLeft(2, '0')}',
               ),
             ),
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _hospitalCtrl,
+            decoration: _decoration(
+              'Hospital',
+              icon: Icons.local_hospital_outlined,
+            ),
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Enter hospital' : null,
+          ),
+
+          const SizedBox(height: 16),
           TextFormField(
             controller: _contactCtrl,
             keyboardType: TextInputType.phone,
-            decoration: _decoration('Contact number', icon: Icons.phone_outlined),
-            validator: (v) {
-              final value = v?.trim() ?? '';
-              if (value.isEmpty) return 'Enter contact number';
-              if (!RegExp(r'^(0|\+94)?\d{9,10}$').hasMatch(value.replaceAll(' ', ''))) {
-                return 'Enter a valid phone number';
-              }
-              return null;
-            },
+            decoration: _decoration(
+              'Contact number',
+              icon: Icons.phone_outlined,
+            ),
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Enter contact number' : null,
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           TextFormField(
             controller: _noteCtrl,
             maxLines: 3,
-            decoration: _decoration('Additional notes (optional)', icon: Icons.notes),
+            decoration: _decoration('Note (optional)', icon: Icons.notes),
           ),
 
           const SizedBox(height: 24),
           SizedBox(
             height: 50,
             child: ElevatedButton(
-              onPressed: _submit,
+              onPressed: _submitting ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _danger,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Post Request',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+              child: _submitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Post Request',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
         ],

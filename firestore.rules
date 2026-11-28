@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Each user can read/write only their own profile
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Donors: any logged-in user can read, only the owner can write
+    match /donors/{uid} {
+      allow read: if signedIn();
+      allow create, update, delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Blood requests: any logged-in user can read and create,
+    // only the owner can change or delete
+    match /blood_requests/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if signedIn()
+                            && resource.data.userId == request.auth.uid;
+    }
+
+    // Providers
+    match /caregivers/{id} {
+      allow read: if signedIn();
+      allow write: if signedIn();
+    }
+    match /pediatricians/{id} {
+      allow read: if signedIn();
+      allow write: if signedIn();
+    }
+
+    // User-owned records (each document has a userId field)
+    match /{col}/{id} {
+      allow read, update, delete: if signedIn()
+        && col in ['baby_equipment_rentals', 'equipment_rentals',
+                   'baby_health_records', 'bookings',
+                   'child_care_requests', 'emergency_transport_requests',
+                   'pediatric_medicine_requests',
+                   'pediatrician_appointments', 'saved_providers']
+        && resource.data.userId == request.auth.uid;
+      allow create: if signedIn()
+        && col in ['baby_equipment_rentals', 'equipment_rentals',
+                   'baby_health_records', 'bookings',
+                   'child_care_requests', 'emergency_transport_requests',
+                   'pediatric_medicine_requests',
+                   'pediatrician_appointments', 'saved_providers']
+        && request.resource.data.userId == request.auth.uid;
+    }
+  }
+}
+    // Organ donors: private. Only the owner can read or write.
+    match /organ_donors/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }

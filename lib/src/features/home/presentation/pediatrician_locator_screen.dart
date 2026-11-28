@@ -1,411 +1,74 @@
-
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'pediatrician_appointment_store.dart';
-class PediatricianLocatorScreen extends StatefulWidget {
+
+class PediatricianLocatorScreen extends StatelessWidget {
   const PediatricianLocatorScreen({super.key});
 
   @override
-  State<PediatricianLocatorScreen> createState() =>
-      _PediatricianLocatorScreenState();
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError || snapshot.data == null) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Pediatrician Locator'),
+              backgroundColor: const Color(0xFFE8F5E9),
+            ),
+            body: const Center(
+              child: Text('Please log in to access appointments.'),
+            ),
+          );
+        }
+
+        return _PediatricianLocatorContent(key: ValueKey(snapshot.data!.uid));
+      },
+    );
+  }
 }
 
-class _PediatricianLocatorScreenState
-    extends State<PediatricianLocatorScreen> {
+class _PediatricianLocatorContent extends StatefulWidget {
+  const _PediatricianLocatorContent({super.key});
+
+  @override
+  State<_PediatricianLocatorContent> createState() =>
+      _PediatricianLocatorContentState();
+}
+
+class _PediatricianLocatorContentState
+    extends State<_PediatricianLocatorContent> {
   final _searchController = TextEditingController();
-final List<Map<String, String>> _appointments =
-    PediatricianAppointmentStore.appointments;
-  final List<Map<String, String>> _doctors = [
-    {
-      'name': 'Dr. Nimal Perera ',
-      'specialization': 'Pediatrician',
-      'location': 'Colombo',
-      'hospital': 'Asiri Hospital',
-    },
-    {
-      'name': 'Dr. Saman Silva',
-      'specialization': 'Pediatrician',
-      'location': 'colombo',
-      'hospital': 'Durdans Hospital',
-    },
-    {
-      'name': 'Dr. Amara Fernando',
-      'specialization': 'Pediatrician',
-      'location': 'colombo',
-      'hospital': 'Nawaloka Hospital',
-    },
-    {
-      'name': 'Dr. Kasun Jayasinghe ',
-      'specialization': 'Pediatrician',
-      'location': 'Kandy',
-      'hospital': 'Asiri Hospital',
-    },
-  ];
+
+  final PediatricianAppointmentStore _store = PediatricianAppointmentStore();
+
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _doctorsStream;
+
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _appointmentsStream;
 
   String _searchQuery = '';
 
+  bool _isBusy = false;
 
-void _editAppointment(Map<String, String> appointment) {
-  final childNameController = TextEditingController(
-    text: appointment['childName'] ?? '',
-  );
+  // ==========================================
+  // INITIALIZE FIREBASE STREAMS
+  // ==========================================
 
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
+  @override
+  void initState() {
+    super.initState();
 
-  final savedDate = appointment['appointmentDate'];
-  if (savedDate != null) {
-    final parts = savedDate.split('/');
-    if (parts.length == 3) {
-      selectedDate = DateTime(
-        int.parse(parts[2]),
-        int.parse(parts[1]),
-        int.parse(parts[0]),
-      );
-    }
+    _doctorsStream = _store.getPediatricians();
+    _appointmentsStream = _store.getAppointments();
   }
-
-  final savedTime = appointment['appointmentTime'];
-  if (savedTime != null) {
-    final match = RegExp(
-      r'^(\d{1,2}):(\d{2})\s*(AM|PM)$',
-      caseSensitive: false,
-    ).firstMatch(savedTime);
-
-    if (match != null) {
-      var hour = int.parse(match.group(1)!);
-      final minute = int.parse(match.group(2)!);
-      final period = match.group(3)!.toUpperCase();
-
-      hour = hour % 12 + (period == 'PM' ? 12 : 0);
-      selectedTime = TimeOfDay(hour: hour, minute: minute);
-    }
-  }
-
-  showDialog(
-    context: context,
-    builder: (dialogContext) {
-      return StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('Edit Appointment'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: childNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Child Name',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ListTile(
-                    leading: const Icon(Icons.calendar_month),
-                    title: Text(
-                      selectedDate == null
-                          ? 'Select Appointment Date'
-                          : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
-                    ),
-                    onTap: () async {
-                      final today = DateTime.now();
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate != null &&
-                                !selectedDate!.isBefore(
-                                  DateTime(today.year, today.month, today.day),
-                                )
-                            ? selectedDate!
-                            : today,
-                        firstDate: DateTime(
-                          today.year,
-                          today.month,
-                          today.day,
-                        ),
-                        lastDate: today.add(
-                          const Duration(days: 365),
-                        ),
-                      );
-
-                      if (date != null && context.mounted) {
-                        setDialogState(() {
-                          selectedDate = date;
-                        });
-                      }
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.access_time),
-                    title: Text(
-                      selectedTime == null
-                          ? 'Select Appointment Time'
-                          : selectedTime!.format(context),
-                    ),
-                    onTap: () async {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: selectedTime ?? TimeOfDay.now(),
-                      );
-
-                      if (time != null && context.mounted) {
-                        setDialogState(() {
-                          selectedTime = time;
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final childName = childNameController.text.trim();
-
-                  if (childName.isEmpty ||
-                      selectedDate == null ||
-                      selectedTime == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please complete all fields.'),
-                      ),
-                    );
-                    return;
-                  }
-
-                  setState(() {
-                    appointment['childName'] = childName;
-                    appointment['appointmentDate'] =
-                        '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}';
-                    appointment['appointmentTime'] =
-                        selectedTime!.format(context);
-                  });
-
-                  Navigator.pop(dialogContext);
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Appointment updated!'),
-                    ),
-                  );
-                },
-                child: const Text('Save Changes'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  ).then((_) {
-    childNameController.dispose();
-  });
-}
-
-
-
-void _showAppointmentForm(Map<String, String> doctor) {
-  final childNameController = TextEditingController();
-
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
-
-  showDialog(
-    context: context,
-    builder: (dialogContext) {
-      return StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('Request Appointment'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: childNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Child Name',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  ListTile(
-                    leading: const Icon(Icons.calendar_month),
-                    title: Text(
-                      selectedDate == null
-                          ? 'Select Appointment Date'
-                          : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
-                    ),
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(
-                          const Duration(days: 365),
-                        ),
-                      );
-
-                      if (date != null && context.mounted) {
-                        setDialogState(() {
-                          selectedDate = date;
-                        });
-                      }
-                    },
-                  ),
-
-                  ListTile(
-                    leading: const Icon(Icons.access_time),
-                    title: Text(
-                      selectedTime == null
-                          ? 'Select Appointment Time'
-                          : selectedTime!.format(context),
-                    ),
-                    onTap: () async {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
-
-                      if (time != null && context.mounted) {
-                        setDialogState(() {
-                          selectedTime = time;
-                        });
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                },
-                child: const Text('Cancel'),
-              ),
-
-              ElevatedButton(
-                onPressed: () {
-                  final childName =
-                      childNameController.text.trim();
-
-                  if (childName.isEmpty ||
-                      selectedDate == null ||
-                      selectedTime == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Please complete all fields.',
-                        ),
-                      ),
-                    );
-                    return;
-                  }
-
-                  final appointmentDate =
-                      '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}';
-
-                  final appointmentTime =
-                      selectedTime!.format(context);
-
-                  setState(() {
-                    _appointments.add({
-                      'doctor': doctor['name'] ?? '',
-                      'childName': childName,
-                      'appointmentDate': appointmentDate,
-                      'appointmentTime': appointmentTime,
-                      'status': 'Pending',
-                      'date': DateTime.now()
-                          .toString()
-                          .substring(0, 16),
-                    });
-                  });
-
-                  Navigator.pop(dialogContext);
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Demo appointment request saved!',
-                      ),
-                    ),
-                  );
-                },
-                child: const Text('Submit Request'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  ).then((_) {
-    childNameController.dispose();
-  });
-}
-
-
-void _showDoctorDetails(Map<String, String> doctor) {
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text(doctor['name'] ?? 'Doctor Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(
-              Icons.medical_services,
-              size: 50,
-              color: Colors.green,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Specialization: ${doctor['specialization']}',
-            ),
-            const SizedBox(height: 8),
-            Text('Hospital: ${doctor['hospital']}'),
-            const SizedBox(height: 8),
-            Text('Location: ${doctor['location']}'),
-            const SizedBox(height: 16),
-            const Text(
-              'Demo profile only. Provider details '
-              'are fictional.',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-   
-actions: [
-  ElevatedButton.icon(
-    onPressed: () {
-      Navigator.pop(context);
-      _showAppointmentForm(doctor);
-    },
-    icon: const Icon(Icons.calendar_month),
-    label: const Text('Request Appointment'),
-  ),
-  TextButton(
-    onPressed: () {
-      Navigator.pop(context);
-    },
-    child: const Text('Close'),
-  ),
-],
-
-      );
-    },
-  );
-}
 
   @override
   void dispose() {
@@ -413,32 +76,590 @@ actions: [
     super.dispose();
   }
 
+  // ==========================================
+  // DISPLAY MESSAGES
+  // ==========================================
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // ==========================================
+  // FORMAT DATE
+  // ==========================================
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  // ==========================================
+  // CREATE OR EDIT APPOINTMENT
+  // ==========================================
+
+  Future<void> _showAppointmentForm({
+    required String doctorId,
+    String? appointmentId,
+    String childName = '',
+    DateTime? existingAppointment,
+  }) async {
+    if (_isBusy) return;
+
+    final isEditing = appointmentId != null;
+
+    final result = await showDialog<_AppointmentFormResult>(
+      context: context,
+      builder: (context) {
+        return _AppointmentFormDialog(
+          isEditing: isEditing,
+          childName: childName,
+          existingAppointment: existingAppointment,
+        );
+      },
+    );
+
+    if (!mounted || result == null || _isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+    });
+
+    try {
+      if (appointmentId != null) {
+        await _store.updateAppointment(
+          appointmentId: appointmentId,
+          childName: result.childName,
+          appointmentAt: result.appointmentAt,
+        );
+      } else {
+        await _store.addAppointment(
+          doctorId: doctorId,
+          childName: result.childName,
+          appointmentAt: result.appointmentAt,
+        );
+      }
+
+      if (!mounted) return;
+
+      _showMessage(
+        isEditing ? 'Appointment updated!' : 'Demo appointment request saved!',
+      );
+    } on FirebaseException catch (e) {
+      if (!mounted) return;
+
+      debugPrint('Firestore appointment error: ${e.code}');
+
+      _showMessage(
+        e.code == 'permission-denied'
+            ? 'Permission denied. Check Firebase rules.'
+            : 'Unable to save appointment.',
+      );
+    } on ArgumentError catch (e) {
+      if (!mounted) return;
+
+      _showMessage(e.message?.toString() ?? 'Invalid appointment details.');
+    } on StateError catch (e) {
+      if (!mounted) return;
+
+      _showMessage(e.message);
+    } catch (_) {
+      if (!mounted) return;
+
+      _showMessage('Something went wrong. Please try again.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBusy = false;
+        });
+      }
+    }
+  }
+
+  // ==========================================
+  // EDIT EXISTING APPOINTMENT
+  // ==========================================
+
+  Future<void> _editAppointment(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) async {
+    final data = doc.data();
+    final appointmentAt = data['appointmentAt'];
+
+    await _showAppointmentForm(
+      doctorId: data['doctorId']?.toString() ?? '',
+      appointmentId: doc.id,
+      childName: data['childName']?.toString() ?? '',
+      existingAppointment: appointmentAt is Timestamp
+          ? appointmentAt.toDate().toLocal()
+          : null,
+    );
+  }
+
+  // ==========================================
+  // DELETE APPOINTMENT
+  // ==========================================
+
+  Future<void> _deleteAppointment(String appointmentId) async {
+    if (_isBusy) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Appointment'),
+          content: const Text(
+            'Are you sure you want to delete '
+            'this appointment request?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || confirmed != true || _isBusy) {
+      return;
+    }
+
+    setState(() {
+      _isBusy = true;
+    });
+
+    try {
+      await _store.deleteAppointment(appointmentId);
+
+      if (!mounted) return;
+
+      _showMessage('Appointment deleted!');
+    } on FirebaseException catch (e) {
+      if (!mounted) return;
+
+      debugPrint('Firestore delete error: ${e.code}');
+
+      _showMessage(
+        e.code == 'permission-denied'
+            ? 'Permission denied.'
+            : 'Unable to delete appointment.',
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      _showMessage('Unable to delete appointment.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBusy = false;
+        });
+      }
+    }
+  }
+
+  // ==========================================
+  // DISPLAY DOCTOR DETAILS
+  // ==========================================
+
+  Future<void> _showDoctorDetails(
+    String doctorId,
+    Map<String, dynamic> doctor,
+  ) async {
+    final requestAppointment = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(doctor['name']?.toString() ?? 'Doctor Details'),
+
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+
+            children: [
+              const Icon(Icons.medical_services, size: 50, color: Colors.green),
+
+              const SizedBox(height: 16),
+
+              Text(
+                'Specialization: '
+                '${doctor['specialization'] ?? ''}',
+              ),
+
+              const SizedBox(height: 8),
+
+              Text('Hospital: ${doctor['hospital'] ?? ''}'),
+
+              const SizedBox(height: 8),
+
+              Text('Location: ${doctor['location'] ?? ''}'),
+
+              const SizedBox(height: 16),
+
+              const Text(
+                'Demo profile only. Provider details '
+                'are fictional.',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+
+          actions: [
+            ElevatedButton.icon(
+              onPressed: _isBusy
+                  ? null
+                  : () {
+                      Navigator.pop(dialogContext, true);
+                    },
+              icon: const Icon(Icons.calendar_month),
+              label: const Text('Request Appointment'),
+            ),
+
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || requestAppointment != true) {
+      return;
+    }
+
+    await _showAppointmentForm(doctorId: doctorId);
+  }
+
+  // ==========================================
+  // FIREBASE PEDIATRICIAN DIRECTORY
+  // ==========================================
+
+  Widget _buildDoctorList() {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _doctorsStream,
+
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          final error = snapshot.error;
+
+          if (error is FirebaseException) {
+            debugPrint('Doctor directory error: ${error.code}');
+          }
+
+          return const Center(
+            child: Text(
+              'Unable to load pediatricians.',
+              style: TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final doctors = snapshot.data?.docs.toList() ?? [];
+
+        final query = _searchQuery.toLowerCase();
+
+        final filteredDoctors = doctors.where((doc) {
+          final doctor = doc.data();
+
+          final name = doctor['name']?.toString().toLowerCase() ?? '';
+
+          final location = doctor['location']?.toString().toLowerCase() ?? '';
+
+          final hospital = doctor['hospital']?.toString().toLowerCase() ?? '';
+
+          return name.contains(query) ||
+              location.contains(query) ||
+              hospital.contains(query);
+        }).toList();
+
+        filteredDoctors.sort((a, b) {
+          final aName = a.data()['name']?.toString() ?? '';
+
+          final bName = b.data()['name']?.toString() ?? '';
+
+          return aName.compareTo(bName);
+        });
+
+        if (filteredDoctors.isEmpty) {
+          return const Center(child: Text('No pediatricians found.'));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+
+          itemCount: filteredDoctors.length,
+
+          itemBuilder: (context, index) {
+            final doc = filteredDoctors[index];
+            final doctor = doc.data();
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+
+              child: ListTile(
+                onTap: () {
+                  _showDoctorDetails(doc.id, doctor);
+                },
+
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFFE8F5E9),
+
+                  child: Icon(Icons.medical_services, color: Colors.green),
+                ),
+
+                title: Text(
+                  doctor['name']?.toString() ?? '',
+
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                  children: [
+                    const SizedBox(height: 6),
+
+                    Text(doctor['specialization']?.toString() ?? ''),
+
+                    Text(
+                      'Hospital: '
+                      '${doctor['hospital'] ?? ''}',
+                    ),
+
+                    Text(
+                      'Location: '
+                      '${doctor['location'] ?? ''}',
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // FIREBASE APPOINTMENT HISTORY
+  // ==========================================
+
+  Widget _buildAppointmentHistory() {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _appointmentsStream,
+
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          final error = snapshot.error;
+
+          if (error is FirebaseException) {
+            debugPrint('Appointment history error: ${error.code}');
+          }
+
+          return const Padding(
+            padding: EdgeInsets.all(12),
+
+            child: Text(
+              'Unable to load appointments.',
+              style: TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Padding(
+            padding: EdgeInsets.all(12),
+
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        final appointments = snapshot.data?.docs.toList() ?? [];
+
+        // Sort newest requests first
+
+        appointments.sort((a, b) {
+          final aTime = a.data()['createdAt'];
+          final bTime = b.data()['createdAt'];
+
+          if (aTime is Timestamp && bTime is Timestamp) {
+            return bTime.compareTo(aTime);
+          }
+
+          if (aTime is Timestamp) return -1;
+          if (bTime is Timestamp) return 1;
+
+          return 0;
+        });
+
+        if (appointments.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(12),
+
+              child: Text(
+                'Appointment History',
+
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+
+            SizedBox(
+              height: 200,
+
+              child: ListView.builder(
+                itemCount: appointments.length,
+
+                itemBuilder: (context, index) {
+                  final doc = appointments[index];
+                  final appointment = doc.data();
+
+                  final appointmentAt = appointment['appointmentAt'];
+
+                  final createdAt = appointment['createdAt'];
+
+                  final requestedDate = appointmentAt is Timestamp
+                      ? _formatDate(appointmentAt.toDate().toLocal())
+                      : 'Not selected';
+
+                  final requestedTime = appointmentAt is Timestamp
+                      ? TimeOfDay.fromDateTime(appointmentAt.toDate().toLocal())
+                            .format(context)
+                      : 'Not selected';
+
+                  final submittedDate = createdAt is Timestamp
+                      ? createdAt.toDate().toLocal().toString().substring(0, 16)
+                      : 'Pending synchronization';
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 5,
+                    ),
+
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.calendar_month,
+                        color: Colors.green,
+                      ),
+
+                      title: Text(appointment['doctor']?.toString() ?? ''),
+
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+
+                        children: [
+                          Text(
+                            'Child: '
+                            '${appointment['childName'] ?? ''}',
+                          ),
+
+                          Text('Requested Date: $requestedDate'),
+
+                          Text('Requested Time: $requestedTime'),
+
+                          Text(
+                            'Status: '
+                            '${appointment['status'] ?? 'Pending'}',
+                          ),
+
+                          Text('Submitted: $submittedDate'),
+                        ],
+                      ),
+
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+
+                            tooltip: 'Edit Appointment',
+
+                            onPressed: _isBusy
+                                ? null
+                                : () {
+                                    _editAppointment(doc);
+                                  },
+                          ),
+
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+
+                            tooltip: 'Delete Appointment',
+
+                            onPressed: _isBusy
+                                ? null
+                                : () {
+                                    _deleteAppointment(doc.id);
+                                  },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ==========================================
+  // ORIGINAL USER INTERFACE
+  // ==========================================
+
   @override
   Widget build(BuildContext context) {
-    final filteredDoctors = _doctors.where((doctor) {
-      final query = _searchQuery.toLowerCase();
-
-      return doctor['name']!.toLowerCase().contains(query) ||
-          doctor['location']!.toLowerCase().contains(query) ||
-          doctor['hospital']!.toLowerCase().contains(query);
-    }).toList();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pediatrician Locator'),
         backgroundColor: const Color(0xFFE8F5E9),
       ),
+
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
+
             child: TextField(
               controller: _searchController,
+
               decoration: const InputDecoration(
                 hintText: 'Search doctor or location',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
+
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value.trim();
@@ -447,166 +668,264 @@ actions: [
             ),
           ),
 
-          Expanded(
-            child: filteredDoctors.isEmpty
-                ? const Center(
-                    child: Text('No pediatricians found.'),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredDoctors.length,
-                    itemBuilder: (context, index) {
-                      final doctor = filteredDoctors[index];
+          if (_isBusy) const LinearProgressIndicator(color: Colors.green),
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          onTap: () {
-                           _showDoctorDetails(doctor);
-                          },
-                          leading: const CircleAvatar(
-                            backgroundColor: Color(0xFFE8F5E9),
-                            child: Icon(
-                              Icons.medical_services,
-                              color: Colors.green,
-                            ),
-                          ),
-                          title: Text(
-                            doctor['name']!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 6),
-                              Text(doctor['specialization']!),
-                              Text(
-                                'Hospital: ${doctor['hospital']}',
-                              ),
-                              Text(
-                                'Location: ${doctor['location']}',
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
+          Expanded(child: _buildDoctorList()),
 
-if (_appointments.isNotEmpty) ...[
-  const Padding(
-    padding: EdgeInsets.all(12),
-    child: Text(
-      'Appointment History',
-      style: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-  ),
-  SizedBox(
-    height: 200,
-    child: ListView.builder(
-      itemCount: _appointments.length,
-      itemBuilder: (context, index) {
-        final appointment = _appointments.reversed.toList()[index];
-
-        return Card(
-          margin: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 5,
-          ),
-          child: ListTile(
-            leading: const Icon(
-              Icons.calendar_month,
-              color: Colors.green,
-            ),
-
-
-trailing: Row(
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    IconButton(
-      icon: const Icon(
-        Icons.edit,
-        color: Colors.blue,
-      ),
-      tooltip: 'Edit Appointment',
-      onPressed: () {
-        _editAppointment(appointment);
-      },
-    ),
-    IconButton(
-      icon: const Icon(
-        Icons.delete,
-        color: Colors.red,
-      ),
-      tooltip: 'Delete Appointment',
-      onPressed: () {
-        setState(() {
-          _appointments.remove(appointment);
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Appointment deleted!'),
-          ),
-        );
-      },
-    ),
-  ],
-),
-
-
-            title: Text(appointment['doctor'] ?? ''),
-           
-subtitle: Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Text(
-      'Child: ${appointment['childName']}',
-    ),
-    Text(
-      'Requested Date: ${appointment['appointmentDate'] ?? 'Not selected'}',
-    ),
-    Text(
-      'Requested Time: ${appointment['appointmentTime'] ?? 'Not selected'}',
-    ),
-    Text(
-      'Status: ${appointment['status']}',
-    ),
-    Text(
-      'Submitted: ${appointment['date']}',
-    ),
-  ],
-),
-
-          ),
-        );
-      },
-    ),
-  ),
-],
+          _buildAppointmentHistory(),
 
           const Padding(
             padding: EdgeInsets.all(12),
+
             child: Text(
               'Demo directory only. Doctor names and '
               'facilities are fictional and are not '
-              'verified healthcare providers.',
+              'verified healthcare providers. '
+              'Requests are not confirmed medical '
+              'appointments. Use fictional information only.',
+
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
+
+              style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+// ==========================================
+// APPOINTMENT FORM RESULT
+// ==========================================
+
+class _AppointmentFormResult {
+  final String childName;
+  final DateTime appointmentAt;
+
+  const _AppointmentFormResult({
+    required this.childName,
+    required this.appointmentAt,
+  });
+}
+
+// ==========================================
+// APPOINTMENT FORM DIALOG
+// ==========================================
+
+class _AppointmentFormDialog extends StatefulWidget {
+  final bool isEditing;
+  final String childName;
+  final DateTime? existingAppointment;
+
+  const _AppointmentFormDialog({
+    required this.isEditing,
+    required this.childName,
+    required this.existingAppointment,
+  });
+
+  @override
+  State<_AppointmentFormDialog> createState() => _AppointmentFormDialogState();
+}
+
+class _AppointmentFormDialogState extends State<_AppointmentFormDialog> {
+  late final TextEditingController _childNameController;
+
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _childNameController = TextEditingController(text: widget.childName);
+
+    final existing = widget.existingAppointment;
+
+    if (existing != null) {
+      _selectedDate = existing;
+      _selectedTime = TimeOfDay.fromDateTime(existing);
+    }
+  }
+
+  @override
+  void dispose() {
+    _childNameController.dispose();
+    super.dispose();
+  }
+
+  // SELECT DATE
+
+  Future<void> _selectDate() async {
+    final now = DateTime.now();
+
+    final today = DateTime(now.year, now.month, now.day);
+
+    final lastDate = today.add(const Duration(days: 365));
+
+    final selected = _selectedDate;
+
+    final initialDate =
+        selected != null &&
+            !selected.isBefore(today) &&
+            !selected.isAfter(lastDate)
+        ? selected
+        : today;
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: today,
+      lastDate: lastDate,
+    );
+
+    if (date != null && mounted) {
+      setState(() {
+        _selectedDate = date;
+        _errorMessage = null;
+      });
+    }
+  }
+
+  // SELECT TIME
+
+  Future<void> _selectTime() async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime ?? TimeOfDay.now(),
+    );
+
+    if (time != null && mounted) {
+      setState(() {
+        _selectedTime = time;
+        _errorMessage = null;
+      });
+    }
+  }
+
+  // VALIDATE AND RETURN FORM DATA
+
+  void _submit() {
+    final childName = _childNameController.text.trim();
+
+    if (childName.isEmpty ||
+        childName.length > 100 ||
+        _selectedDate == null ||
+        _selectedTime == null) {
+      setState(() {
+        _errorMessage = 'Please enter valid details for all fields.';
+      });
+
+      return;
+    }
+
+    final appointmentAt = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+
+    final now = DateTime.now();
+
+    if (!appointmentAt.isAfter(now) ||
+        appointmentAt.isAfter(now.add(const Duration(days: 365)))) {
+      setState(() {
+        _errorMessage = 'Select a future appointment within one year.';
+      });
+
+      return;
+    }
+
+    Navigator.pop(
+      context,
+      _AppointmentFormResult(
+        childName: childName,
+        appointmentAt: appointmentAt,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        widget.isEditing ? 'Edit Appointment' : 'Request Appointment',
+      ),
+
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+
+          children: [
+            TextField(
+              controller: _childNameController,
+
+              decoration: const InputDecoration(
+                labelText: 'Child Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+
+              title: Text(
+                _selectedDate == null
+                    ? 'Select Appointment Date'
+                    : '${_selectedDate!.day}/'
+                          '${_selectedDate!.month}/'
+                          '${_selectedDate!.year}',
+              ),
+
+              onTap: _selectDate,
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.access_time),
+
+              title: Text(
+                _selectedTime == null
+                    ? 'Select Appointment Time'
+                    : _selectedTime!.format(context),
+              ),
+
+              onTap: _selectTime,
+            ),
+
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+
+                child: Text(
+                  _errorMessage!,
+
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+          ],
+        ),
+      ),
+
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text('Cancel'),
+        ),
+
+        ElevatedButton(
+          onPressed: _submit,
+
+          child: Text(widget.isEditing ? 'Save Changes' : 'Submit Request'),
+        ),
+      ],
     );
   }
 }
