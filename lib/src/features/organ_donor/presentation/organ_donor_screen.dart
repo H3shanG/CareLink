@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../data/organ_donor_repository.dart';
+
 class OrganDonorScreen extends StatefulWidget {
   const OrganDonorScreen({super.key});
 
@@ -18,6 +20,9 @@ class _OrganDonorScreenState extends State<OrganDonorScreen> {
   String? _selectedGender;
   final List<String> _selectedOrgans = [];
   bool _hasGivenConsent = false;
+
+  final _repo = OrganDonorRepository();
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -217,18 +222,23 @@ class _OrganDonorScreenState extends State<OrganDonorScreen> {
             SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: _registerDonor,
-                child: const Text(
-                  'Register as an Organ Donor',
-                  style: TextStyle(fontSize: 16),
-                ),
+                onPressed: _submitting ? null : _registerDonor,
+                child: _submitting
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Register as an Organ Donor',
+                        style: TextStyle(fontSize: 16),
+                      ),
               ),
             ),
             const SizedBox(height: 20),
 
             const Text(
-              'This is a demonstration registration form. '
-              'It does not create an official organ donor registration.',
+              'Your information is stored securely and is only visible to you.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
@@ -238,7 +248,8 @@ class _OrganDonorScreenState extends State<OrganDonorScreen> {
     );
   }
 
-  void _registerDonor() {
+  Future<void> _registerDonor() async {
+    if (_submitting) return;
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -257,6 +268,34 @@ class _OrganDonorScreenState extends State<OrganDonorScreen> {
       return;
     }
 
+    setState(() => _submitting = true);
+    try {
+      await _repo
+          .saveMyRegistration(
+            fullName: _nameController.text.trim(),
+            age: int.parse(_ageController.text.trim()),
+            phone: _phoneController.text.trim(),
+            address: _addressController.text.trim(),
+            gender: _selectedGender!,
+            organs: List<String>.from(_selectedOrgans),
+            consentGiven: _hasGivenConsent,
+          )
+          .timeout(const Duration(seconds: 15));
+    } catch (e) {
+      debugPrint('Organ donor registration failed: $e');
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save your registration. Please try again.'),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
     showDialog(
       context: context,
       builder: (context) {
@@ -264,7 +303,7 @@ class _OrganDonorScreenState extends State<OrganDonorScreen> {
           title: const Text('Registration Completed'),
           content: Text(
             'Thank you, ${_nameController.text.trim()}!\n\n'
-            'Your demonstration registration form is complete.',
+            'Your registration has been saved.',
           ),
           actions: [
             TextButton(
