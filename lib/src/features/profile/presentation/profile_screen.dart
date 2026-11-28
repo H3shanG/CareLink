@@ -4,6 +4,16 @@ import '../settings/presentation/settings_screen.dart';
 
 import '../notifications/presentation/notifications_screen.dart';
 
+import 'my_profile_screen.dart';
+
+import '../../booking/presentation/my_bookings_screen.dart';
+
+import 'my_health_records_screen.dart';
+
+import '../saved_providers/presentation/saved_providers_screen.dart';
+
+import 'help_support_screen.dart';
+
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
@@ -24,13 +34,48 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          _buildProfileOption(Icons.person_outline, 'My Profile'),
-          _buildProfileOption(Icons.calendar_month, 'My Bookings'),
+          _buildProfileOption(
+            Icons.person_outline,
+            'My Profile',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyProfileScreen()),
+              );
+            },
+          ),
+          _buildProfileOption(
+            Icons.calendar_month,
+            'My Bookings',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyBookingsScreen()),
+              );
+            },
+          ),
           _buildProfileOption(
             Icons.medical_services_outlined,
             'My Health Records',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const MyHealthRecordsScreen(),
+                ),
+              );
+            },
           ),
-          _buildProfileOption(Icons.favorite_border, 'Saved Providers'),
+          _buildProfileOption(
+            Icons.favorite_border,
+            'Saved Providers',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SavedProvidersScreen()),
+              );
+            },
+          ),
           _buildProfileOption(
             Icons.notifications_outlined,
             'Notifications',
@@ -53,7 +98,16 @@ class ProfileScreen extends StatelessWidget {
             },
           ),
 
-          _buildProfileOption(Icons.help_outline, 'Help & Support'),
+          _buildProfileOption(
+            Icons.help_outline,
+            'Help & Support',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
+              );
+            },
+          ),
           _buildProfileOption(Icons.logout, 'Logout'),
         ],
       ),

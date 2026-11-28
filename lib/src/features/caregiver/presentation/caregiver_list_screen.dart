@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../data/caregiver_model.dart';
 import 'caregiver_profile_screen.dart';
@@ -173,7 +175,52 @@ class _CaregiverCard extends StatelessWidget {
                   ),
                   Column(
                     children: [
-                      const Icon(Icons.favorite_border, color: Colors.red),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.favorite_border,
+                          color: Colors.red,
+                        ),
+                        tooltip: 'Save provider',
+                        onPressed: () async {
+                          final user = FirebaseAuth.instance.currentUser;
+
+                          if (user == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please log in first.'),
+                              ),
+                            );
+                            return;
+                          }
+
+                          try {
+                            await FirebaseFirestore.instance
+                                .collection('saved_providers')
+                                .doc('${user.uid}_${caregiver.id}')
+                                .set({
+                                  'userId': user.uid,
+                                  'caregiverId': caregiver.id,
+                                  'savedAt': FieldValue.serverTimestamp(),
+                                });
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Provider saved successfully!'),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Could not save provider: $e'),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
                       Text(
                         caregiver.distance,
                         style: const TextStyle(fontSize: 12),
