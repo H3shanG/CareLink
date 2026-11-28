@@ -17,6 +17,11 @@ service cloud.firestore {
       allow create, update, delete: if signedIn() && request.auth.uid == uid;
     }
 
+    // Organ donors: private. Only the owner can read or write.
+    match /organ_donors/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
     // Blood requests: any logged-in user can read and create,
     // only the owner can change or delete
     match /blood_requests/{id} {
@@ -56,7 +61,3 @@ service cloud.firestore {
     }
   }
 }
-    // Organ donors: private. Only the owner can read or write.
-    match /organ_donors/{uid} {
-      allow read, write: if signedIn() && request.auth.uid == uid;
-    }
