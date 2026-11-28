@@ -1,11 +1,78 @@
 import 'package:flutter/material.dart';
 
+import '../../auth/services/auth_service.dart';
+import '../../../core/routes/route_names.dart';
 import '../settings/presentation/settings_screen.dart';
-
 import '../notifications/presentation/notifications_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final AuthService _authService = AuthService();
+
+  bool _isLoggingOut = false;
+
+  Future<void> _confirmLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout from CareLink?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout == true) {
+      await _logout();
+    }
+  }
+
+  Future<void> _logout() async {
+    if (_isLoggingOut) return;
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    try {
+      await _authService.logout();
+
+      if (!mounted) return;
+
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(RouteNames.login, (route) => false);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoggingOut = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logout failed. Please try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +98,7 @@ class ProfileScreen extends StatelessWidget {
             'My Health Records',
           ),
           _buildProfileOption(Icons.favorite_border, 'Saved Providers'),
+
           _buildProfileOption(
             Icons.notifications_outlined,
             'Notifications',
@@ -54,7 +122,12 @@ class ProfileScreen extends StatelessWidget {
           ),
 
           _buildProfileOption(Icons.help_outline, 'Help & Support'),
-          _buildProfileOption(Icons.logout, 'Logout'),
+
+          _buildProfileOption(
+            Icons.logout,
+            _isLoggingOut ? 'Logging out...' : 'Logout',
+            onTap: _isLoggingOut ? null : _confirmLogout,
+          ),
         ],
       ),
     );
