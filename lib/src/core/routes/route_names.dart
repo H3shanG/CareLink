@@ -21,3 +21,4 @@ class RouteNames {
   static const String caregiverBooking = '/caregiver/booking';
   static const String bookingDetails = '/booking-details';
 }
+

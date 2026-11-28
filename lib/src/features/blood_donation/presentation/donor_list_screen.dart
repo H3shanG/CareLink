@@ -1,11 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../data/donor_location.dart';
+import '../data/donor_repository.dart';
 import '../models/donor.dart';
-
 
 const Color _danger = Color(0xFFE53935);
 
+// Opens the phone dialer with the donor's number
+Future<void> callDonor(BuildContext context, Donor donor) async {
+  var opened = false;
+  try {
+    opened = await launchUrl(Uri(scheme: 'tel', path: donor.phone));
+  } catch (_) {
+    opened = false;
+  }
+  if (!opened && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Could not open the phone app')),
+    );
+  }
+}
 
 class DonorFilter {
   final double maxDistanceKm;
@@ -13,7 +30,8 @@ class DonorFilter {
   const DonorFilter({this.maxDistanceKm = 15, this.onlyAvailable = false});
 }
 
-Future<DonorFilter?> showDonorFilterSheet(BuildContext context, DonorFilter current) {
+Future<DonorFilter?> showDonorFilterSheet(
+    BuildContext context, DonorFilter current) {
   return showModalBottomSheet<DonorFilter>(
     context: context,
     isScrollControlled: true,
@@ -78,7 +96,8 @@ class _FilterSheetState extends State<_FilterSheet> {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(
                     context,
-                    DonorFilter(maxDistanceKm: _distance, onlyAvailable: _onlyAvailable),
+                    DonorFilter(
+                        maxDistanceKm: _distance, onlyAvailable: _onlyAvailable),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -95,7 +114,6 @@ class _FilterSheetState extends State<_FilterSheet> {
   }
 }
 
-
 // Reusable donor card
 
 class DonorCard extends StatelessWidget {
@@ -106,6 +124,11 @@ class DonorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final available = donor.isAvailable;
+    final km = donor.distanceKm;
+    final distanceText = km != null
+        ? '$km km away'
+        : (donor.area.isNotEmpty ? donor.area : 'Distance unavailable');
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -119,10 +142,13 @@ class DonorCard extends StatelessWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            backgroundImage: donor.photoAsset != null ? AssetImage(donor.photoAsset!) : null,
+            backgroundImage:
+                donor.photoAsset != null ? AssetImage(donor.photoAsset!) : null,
             child: donor.photoAsset == null
-                ? Text(donor.name[0],
-                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold))
+                ? Text(
+                    donor.name.isNotEmpty ? donor.name[0].toUpperCase() : '?',
+                    style: const TextStyle(
+                        color: AppColors.primary, fontWeight: FontWeight.bold))
                 : null,
           ),
           const SizedBox(width: 12),
@@ -135,29 +161,40 @@ class DonorCard extends StatelessWidget {
                     Flexible(
                       child: Text(donor.name,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 14)),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: _danger.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(donor.bloodGroup,
                           style: const TextStyle(
-                              color: _danger, fontSize: 11, fontWeight: FontWeight.bold)),
+                              color: _danger,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 14),
-                    Text(' ${donor.rating}', style: const TextStyle(fontSize: 12)),
-                    const SizedBox(width: 8),
-                    Text('${donor.distanceKm} km away',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    if (donor.rating > 0) ...[
+                      const Icon(Icons.star, color: Colors.amber, size: 14),
+                      Text(' ${donor.rating}',
+                          style: const TextStyle(fontSize: 12)),
+                      const SizedBox(width: 8),
+                    ],
+                    Flexible(
+                      child: Text(distanceText,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.textSecondary)),
+                    ),
                   ],
                 ),
               ],
@@ -167,16 +204,19 @@ class DonorCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (available ? AppColors.success : AppColors.textSecondary).withValues(alpha: 0.12),
+                  color: (available ? AppColors.success : AppColors.textSecondary)
+                      .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   available ? 'Available' : 'Unavailable',
                   style: TextStyle(
                     fontSize: 11,
-                    color: available ? AppColors.success : AppColors.textSecondary,
+                    color:
+                        available ? AppColors.success : AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -184,7 +224,8 @@ class DonorCard extends StatelessWidget {
               InkWell(
                 onTap: available ? onCall : null,
                 child: Icon(Icons.call,
-                    size: 20, color: available ? AppColors.primary : AppColors.border),
+                    size: 20,
+                    color: available ? AppColors.primary : AppColors.border),
               ),
             ],
           ),
@@ -193,7 +234,6 @@ class DonorCard extends StatelessWidget {
     );
   }
 }
-
 
 // Full donor list screen
 
@@ -206,19 +246,42 @@ class DonorListScreen extends StatefulWidget {
 }
 
 class _DonorListScreenState extends State<DonorListScreen> {
-  late String? _group = widget.initialBloodGroup; 
+  final _donorRepo = DonorRepository();
+  late final Stream<List<Donor>> _donorStream = _donorRepo.watchDonors();
+
+  late String? _group = widget.initialBloodGroup;
   DonorFilter _filter = const DonorFilter();
   String _query = '';
+  Position? _position;
 
-  List<Donor> get _results {
-    return sampleDonors.where((d) {
+  @override
+  void initState() {
+    super.initState();
+    _loadPosition();
+  }
+
+  Future<void> _loadPosition() async {
+    final pos = await DonorLocation.currentPosition();
+    if (!mounted) return;
+    setState(() => _position = pos);
+  }
+
+  List<Donor> _applyFilters(List<Donor> all) {
+    final list = DonorLocation.withDistance(all, _position).where((d) {
       if (_group != null && d.bloodGroup != _group) return false;
       if (_filter.onlyAvailable && !d.isAvailable) return false;
-      if (d.distanceKm > _filter.maxDistanceKm) return false;
-      if (_query.isNotEmpty && !d.name.toLowerCase().contains(_query.toLowerCase())) return false;
+      final km = d.distanceKm;
+      if (km != null && km > _filter.maxDistanceKm) return false;
+      if (_query.isNotEmpty &&
+          !d.name.toLowerCase().contains(_query.toLowerCase())) {
+        return false;
+      }
       return true;
-    }).toList()
-      ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+    }).toList();
+
+    list.sort((a, b) => (a.distanceKm ?? double.infinity)
+        .compareTo(b.distanceKm ?? double.infinity));
+    return list;
   }
 
   Future<void> _openFilter() async {
@@ -228,7 +291,6 @@ class _DonorListScreenState extends State<DonorListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final results = _results;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -270,41 +332,65 @@ class _DonorListScreenState extends State<DonorListScreen> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
-            child: Row(
-              children: [
-                Text('${results.length} donors found',
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: _openFilter,
-                  icon: const Icon(Icons.tune, size: 16),
-                  label: const Text('Filter'),
-                ),
-              ],
-            ),
-          ),
           Expanded(
-            child: results.isEmpty
-                ? const Center(
-                    child: Text('No donors match your filters',
-                        style: TextStyle(color: AppColors.textSecondary)))
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    itemCount: results.length,
-                    itemBuilder: (_, i) => DonorCard(
-                      donor: results[i],
-                      onCall: () => ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Calling ${results[i].name}...')),
+            child: StreamBuilder<List<Donor>>(
+              stream: _donorStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text('Could not load donors',
+                        style: TextStyle(color: AppColors.textSecondary)),
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final results = _applyFilters(snapshot.data!);
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
+                      child: Row(
+                        children: [
+                          Text('${results.length} donors found',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 13)),
+                          const Spacer(),
+                          TextButton.icon(
+                            onPressed: _openFilter,
+                            icon: const Icon(Icons.tune, size: 16),
+                            label: const Text('Filter'),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                    Expanded(
+                      child: results.isEmpty
+                          ? const Center(
+                              child: Text('No donors match your filters',
+                                  style: TextStyle(
+                                      color: AppColors.textSecondary)))
+                          : ListView.builder(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                              itemCount: results.length,
+                              itemBuilder: (_, i) => DonorCard(
+                                donor: results[i],
+                                onCall: () => callDonor(context, results[i]),
+                              ),
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
     );
   }
+
   Widget _chip(String label, bool selected, VoidCallback onTap) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -313,7 +399,9 @@ class _DonorListScreenState extends State<DonorListScreen> {
         selected: selected,
         onSelected: (_) => onTap(),
         selectedColor: AppColors.primary,
-        labelStyle: TextStyle(color: selected ? Colors.white : AppColors.textPrimary, fontSize: 13),
+        labelStyle: TextStyle(
+            color: selected ? Colors.white : AppColors.textPrimary,
+            fontSize: 13),
         backgroundColor: Colors.white,
         side: const BorderSide(color: AppColors.border),
         showCheckmark: false,
