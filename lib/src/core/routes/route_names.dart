@@ -20,5 +20,6 @@ class RouteNames {
   static const String caregiverProfile = '/caregiver/profile';
   static const String caregiverBooking = '/caregiver/booking';
   static const String bookingDetails = '/booking-details';
+  static const String pharmacy = '/pharmacy';
+  static const String emergency = '/emergency';
 }
-

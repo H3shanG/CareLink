@@ -22,6 +22,9 @@ import '../../features/booking/data/booking_model.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/equipment_rental/presentation/equipment_rental_screen.dart';
 import '../../features/organ_donor/presentation/organ_donor_screen.dart';
+import '../../features/pharmacy/presentation/pharmacy_list_screen.dart';
+import '../../features/pharmacy/presentation/emergency_transport_screen.dart'
+    as pharmacy_emergency;
 
 class AppRoutes {
   AppRoutes._();
@@ -74,6 +77,7 @@ class AppRoutes {
 
       case RouteNames.donorList:
         return MaterialPageRoute(builder: (_) => const DonorListScreen());
+
       case RouteNames.caregiverList:
         return MaterialPageRoute(builder: (_) => const CaregiverListScreen());
 
@@ -93,6 +97,15 @@ class AppRoutes {
         final booking = settings.arguments as Booking;
         return MaterialPageRoute(
           builder: (_) => BookingDetailsScreen(booking: booking),
+        );
+
+      case RouteNames.pharmacy:
+        return MaterialPageRoute(builder: (_) => const PharmacyListScreen());
+
+     case RouteNames.emergency:
+        return MaterialPageRoute(
+          builder: (_) =>
+              const pharmacy_emergency.AdultEmergencyTransportScreen(),
         );
 
       default:
