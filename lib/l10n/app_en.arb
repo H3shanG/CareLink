@@ -1,0 +1,14 @@
+{
+  "@@locale": "en",
+  "settings": "Settings",
+  "pushNotifications": "Push Notifications",
+  "receiveNotifications": "Receive app notifications",
+  "privacySecurity": "Privacy & Security",
+  "language": "Language",
+  "aboutCareLink": "About CareLink",
+  "privacyMessage": "Your privacy and account security are important to us.\n\n• Keep your login credentials private.\n\n• Use a strong password for your account.\n\n• Always log out when using a shared device.\n\n• Be careful when sharing personal information.",
+  "close": "Close",
+  "selectLanguage": "Select Language",
+  "careLinkDescription": "CareLink connects people with caregivers and essential care services, making care more accessible, convenient and reliable.",
+  "appVersion": "Version 1.0.0"
+}
