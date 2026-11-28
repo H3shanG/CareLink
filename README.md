@@ -214,8 +214,8 @@ running the application.
 | Emergency Transport | ✅ Implemented |
 | My Requests Integration | ✅ Implemented |
 | Flutter Static Analysis | ✅ Passed |
-| Firebase Security Rules | 🔄 Pending verification |
-| Functional Testing | 🔄 Pending |
+| Firebase Security Rules | ✅ Implemented |
+| Functional Testing | ✅ Passed |
 
 ---
 
