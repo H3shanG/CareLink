@@ -15,7 +15,6 @@ class ChildMyRequestsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
-
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -26,12 +25,10 @@ class ChildMyRequestsScreen extends StatelessWidget {
         if (snapshot.hasError || snapshot.data == null) {
           return Scaffold(
             backgroundColor: const Color(0xFFF9FAFC),
-
             appBar: AppBar(
               title: const Text('My Requests'),
               backgroundColor: Colors.white,
             ),
-
             body: const Center(
               child: Text('Please log in to view your requests.'),
             ),
@@ -67,6 +64,9 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
   final PediatricianAppointmentStore _appointmentStore =
       PediatricianAppointmentStore();
 
+  final EmergencyTransportRequestStore _emergencyStore =
+      EmergencyTransportRequestStore();
+
   // ==========================================
   // FIREBASE STREAMS
   // ==========================================
@@ -78,6 +78,8 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _rentalStream;
 
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _appointmentStream;
+
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _emergencyStream;
 
   // ==========================================
   // INITIALIZE FIREBASE STREAMS
@@ -94,6 +96,8 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
     _rentalStream = _rentalStore.getRentals();
 
     _appointmentStream = _appointmentStore.getAppointments();
+
+    _emergencyStream = _emergencyStore.getRequests();
   }
 
   // ==========================================
@@ -125,7 +129,7 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
 
     final documents = snapshot.docs.toList();
 
-    // Sort newest requests first
+    // Sort newest requests first.
 
     documents.sort((a, b) {
       final aTime = a.data()['createdAt'];
@@ -147,7 +151,7 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
       final request = <String, String>{};
 
       for (final entry in data.entries) {
-        // Hide internal database fields
+        // Hide internal database fields.
 
         if (entry.key == 'userId' ||
             entry.key == 'updatedAt' ||
@@ -207,6 +211,15 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
       case 'appointmentTime':
         return 'Appointment Time';
 
+      case 'location':
+        return 'Pickup Location';
+
+      case 'contact':
+        return 'Contact Number';
+
+      case 'details':
+        return 'Emergency Details';
+
       case 'status':
         return 'Status';
 
@@ -226,7 +239,6 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
     return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-
         children: [
           Icon(Icons.assignment_outlined, size: 70, color: Colors.grey),
 
@@ -234,7 +246,6 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
 
           Text(
             'No Requests Yet',
-
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
 
@@ -253,7 +264,6 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
   Widget _buildRequestCard(String groupName, Map<String, String> request) {
     return Card(
       color: Colors.white,
-
       margin: const EdgeInsets.only(bottom: 12),
 
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -267,7 +277,6 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
           children: [
             Text(
               groupName,
-
               style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
@@ -286,6 +295,18 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
                   '${entry.value}',
                 ),
               ),
+
+            if (groupName == 'Emergency Transport')
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+
+                child: Text(
+                  'Demo only. No ambulance or emergency '
+                  'service has been contacted.',
+
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
           ],
         ),
       ),
@@ -296,13 +317,17 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
   // DISPLAY ALL REQUEST GROUPS
   // ==========================================
 
-  Widget _buildRequests(Map<String, List<Map<String, String>>> groups) {
+  Widget _buildRequests(
+    Map<String, List<Map<String, String>>> groups, {
+    required List<String> failedGroups,
+    required bool isLoading,
+  }) {
     final totalRequests = groups.values.fold<int>(
       0,
       (total, requests) => total + requests.length,
     );
 
-    if (totalRequests == 0) {
+    if (totalRequests == 0 && failedGroups.isEmpty && !isLoading) {
       return _buildEmptyState();
     }
 
@@ -311,12 +336,32 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
 
       children: [
         Text(
-          'Total Requests: $totalRequests',
+          isLoading || failedGroups.isNotEmpty
+              ? 'Loaded Requests: $totalRequests'
+              : 'Total Requests: $totalRequests',
 
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
 
         const SizedBox(height: 16),
+
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 16),
+            child: LinearProgressIndicator(),
+          ),
+
+        if (failedGroups.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+
+            child: Text(
+              'Unable to load: ${failedGroups.join(', ')}. '
+              'Check your connection and Firebase permissions.',
+
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
 
         for (final group in groups.entries)
           for (final request in group.value)
@@ -326,24 +371,45 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
   }
 
   // ==========================================
-  // FIREBASE ERROR HANDLING
+  // COMBINE ALL FIVE FIREBASE COLLECTIONS
   // ==========================================
 
-  Widget _buildErrorState() {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(20),
+  Widget _buildCombinedRequests(
+    Map<String, AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>>> snapshots,
+  ) {
+    final groups = <String, List<Map<String, String>>>{};
 
-        child: Text(
-          'Unable to load requests. '
-          'Please check your connection and '
-          'Firebase permissions.',
+    final failedGroups = <String>[];
 
-          textAlign: TextAlign.center,
+    bool isLoading = false;
 
-          style: TextStyle(color: Colors.red),
-        ),
-      ),
+    for (final entry in snapshots.entries) {
+      final snapshot = entry.value;
+
+      if (snapshot.hasError) {
+        failedGroups.add(entry.key);
+
+        final error = snapshot.error;
+
+        if (error is FirebaseException) {
+          debugPrint('${entry.key} Firestore error: ${error.code}');
+        }
+
+        continue;
+      }
+
+      if (!snapshot.hasData &&
+          snapshot.connectionState == ConnectionState.waiting) {
+        isLoading = true;
+      }
+
+      groups[entry.key] = _convertDocuments(snapshot.data);
+    }
+
+    return _buildRequests(
+      groups,
+      failedGroups: failedGroups,
+      isLoading: isLoading,
     );
   }
 
@@ -366,82 +432,43 @@ class _ChildMyRequestsContentState extends State<_ChildMyRequestsContent> {
         stream: _childCareStream,
 
         builder: (context, childCareSnapshot) {
-          if (childCareSnapshot.hasError) {
-            return _buildErrorState();
-          }
-
           // PEDIATRIC MEDICINE STREAM
 
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: _medicineStream,
 
             builder: (context, medicineSnapshot) {
-              if (medicineSnapshot.hasError) {
-                return _buildErrorState();
-              }
-
               // BABY EQUIPMENT RENTAL STREAM
 
               return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _rentalStream,
 
                 builder: (context, rentalSnapshot) {
-                  if (rentalSnapshot.hasError) {
-                    return _buildErrorState();
-                  }
-
                   // PEDIATRICIAN APPOINTMENT STREAM
 
                   return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                     stream: _appointmentStream,
 
                     builder: (context, appointmentSnapshot) {
-                      if (appointmentSnapshot.hasError) {
-                        return _buildErrorState();
-                      }
+                      // EMERGENCY TRANSPORT STREAM
 
-                      // Wait until all Firebase
-                      // collections have loaded
+                      return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                        stream: _emergencyStream,
 
-                      if (!childCareSnapshot.hasData ||
-                          !medicineSnapshot.hasData ||
-                          !rentalSnapshot.hasData ||
-                          !appointmentSnapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+                        builder: (context, emergencySnapshot) {
+                          return _buildCombinedRequests({
+                            'Sick Child Care': childCareSnapshot,
 
-                      final groups = <String, List<Map<String, String>>>{
-                        // SICK CHILD CARE
+                            'Pediatric Medicine': medicineSnapshot,
 
-                        'Sick Child Care': _convertDocuments(
-                          childCareSnapshot.data,
-                        ),
+                            'Baby Equipment Rental': rentalSnapshot,
 
-                        // PEDIATRIC MEDICINE
-                        'Pediatric Medicine': _convertDocuments(
-                          medicineSnapshot.data,
-                        ),
+                            'Pediatrician Appointment': appointmentSnapshot,
 
-                        // BABY EQUIPMENT RENTAL
-                        'Baby Equipment Rental': _convertDocuments(
-                          rentalSnapshot.data,
-                        ),
-
-                        // PEDIATRICIAN APPOINTMENT
-                        'Pediatrician Appointment': _convertDocuments(
-                          appointmentSnapshot.data,
-                        ),
-
-                        // EMERGENCY TRANSPORT
-                        // Temporary storage until the
-                        // final backend is implemented
-                        'Emergency Transport': EmergencyTransportRequestStore
-                            .requests
-                            .reversed
-                            .toList(),
-                      };
-
-                      return _buildRequests(groups);
+                            'Emergency Transport': emergencySnapshot,
+                          });
+                        },
+                      );
                     },
                   );
                 },
