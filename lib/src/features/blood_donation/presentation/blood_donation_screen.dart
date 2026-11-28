@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../data/donor_location.dart';
+import '../data/donor_repository.dart';
 import '../models/donor.dart';
+import 'become_donor_sheet.dart';
 import 'blood_request_screen.dart';
 import 'donor_list_screen.dart';
 
-// AppColors eke 'danger' nathi nisa local color eka (red)
+// AppColors has no 'danger' color, so a local red is used here
 const Color _danger = Color(0xFFE53935);
 
 class BloodDonationScreen extends StatefulWidget {
@@ -14,18 +18,42 @@ class BloodDonationScreen extends StatefulWidget {
   @override
   State<BloodDonationScreen> createState() => _BloodDonationScreenState();
 }
-      
+
 class _BloodDonationScreenState extends State<BloodDonationScreen> {
   int _tab = 0; // 0 = Find Donors, 1 = Post Request
   String _group = 'A+';
   DonorFilter _filter = const DonorFilter();
 
-  List<Donor> get _donors => sampleDonors.where((d) {
-        if (d.bloodGroup != _group) return false;
-        if (_filter.onlyAvailable && !d.isAvailable) return false;
-        return d.distanceKm <= _filter.maxDistanceKm;
-      }).toList()
-        ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+  final _donorRepo = DonorRepository();
+  late final Stream<List<Donor>> _donorStream = _donorRepo.watchDonors();
+  Position? _position;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPosition();
+  }
+
+  Future<void> _loadPosition() async {
+    final pos = await DonorLocation.currentPosition();
+    if (!mounted) return;
+    setState(() => _position = pos);
+  }
+
+  // Adds distances, applies the blood group and filter, and sorts by distance
+  List<Donor> _applyFilters(List<Donor> all) {
+    final list = DonorLocation.withDistance(all, _position).where((d) {
+      if (d.bloodGroup != _group) return false;
+      if (_filter.onlyAvailable && !d.isAvailable) return false;
+      final km = d.distanceKm;
+      if (km != null && km > _filter.maxDistanceKm) return false;
+      return true;
+    }).toList();
+
+    list.sort((a, b) => (a.distanceKm ?? double.infinity)
+        .compareTo(b.distanceKm ?? double.infinity));
+    return list;
+  }
 
   Future<void> _openFilter() async {
     final result = await showDonorFilterSheet(context, _filter);
@@ -52,8 +80,10 @@ class _BloodDonationScreenState extends State<BloodDonationScreen> {
                 Icon(Icons.location_on, size: 12, color: _danger),
                 SizedBox(width: 2),
                 Text('Colombo, Sri Lanka',
-                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                Icon(Icons.keyboard_arrow_down, size: 14, color: AppColors.textSecondary),
+                    style: TextStyle(
+                        fontSize: 11, color: AppColors.textSecondary)),
+                Icon(Icons.keyboard_arrow_down,
+                    size: 14, color: AppColors.textSecondary),
               ],
             ),
           ],
@@ -62,7 +92,8 @@ class _BloodDonationScreenState extends State<BloodDonationScreen> {
       body: Column(
         children: [
           _buildTabs(),
-          Expanded(child: _tab == 0 ? _buildFindDonors() : const BloodRequestForm()),
+          Expanded(
+              child: _tab == 0 ? _buildFindDonors() : const BloodRequestForm()),
         ],
       ),
     );
@@ -78,7 +109,9 @@ class _BloodDonationScreenState extends State<BloodDonationScreen> {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? AppColors.primary.withValues(alpha: 0.12) : Colors.transparent,
+              color: selected
+                  ? AppColors.primary.withValues(alpha: 0.12)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
               border: selected ? Border.all(color: AppColors.primary) : null,
             ),
@@ -87,7 +120,8 @@ class _BloodDonationScreenState extends State<BloodDonationScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: selected ? AppColors.primary : AppColors.textSecondary,
+                    color:
+                        selected ? AppColors.primary : AppColors.textSecondary,
                   )),
             ),
           ),
@@ -98,89 +132,127 @@ class _BloodDonationScreenState extends State<BloodDonationScreen> {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Row(children: [tab('Find Donors', 0), const SizedBox(width: 8), tab('Post Request', 1)]),
+      child: Row(children: [
+        tab('Find Donors', 0),
+        const SizedBox(width: 8),
+        tab('Post Request', 1),
+      ]),
     );
   }
 
   Widget _buildFindDonors() {
-    final donors = _donors;
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        SizedBox(
-          height: 40,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: bloodGroups.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (_, i) {
-              final g = bloodGroups[i];
-              final selected = g == _group;
-              return ChoiceChip(
-                label: Text(g),
-                selected: selected,
-                showCheckmark: false,
-                selectedColor: AppColors.primary,
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: AppColors.border),
-                labelStyle: TextStyle(color: selected ? Colors.white : AppColors.textPrimary),
-                onSelected: (_) => setState(() => _group = g),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 14),
-        _MapPlaceholder(donorCount: donors.length),
-        const SizedBox(height: 12),
-        Row(
+    return StreamBuilder<List<Donor>>(
+      stream: _donorStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Center(
+            child: Text('Could not load donors',
+                style: TextStyle(color: AppColors.textSecondary)),
+          );
+        }
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final donors = _applyFilters(snapshot.data!);
+        return ListView(
+          padding: const EdgeInsets.all(16),
           children: [
-            Text('${donors.length} donors found near you',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            const Spacer(),
+            SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: bloodGroups.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final g = bloodGroups[i];
+                  final selected = g == _group;
+                  return ChoiceChip(
+                    label: Text(g),
+                    selected: selected,
+                    showCheckmark: false,
+                    selectedColor: AppColors.primary,
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: AppColors.border),
+                    labelStyle: TextStyle(
+                        color: selected ? Colors.white : AppColors.textPrimary),
+                    onSelected: (_) => setState(() => _group = g),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 14),
+            _MapPlaceholder(donorCount: donors.length),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text(
+                  _position == null
+                      ? '${donors.length} donors found'
+                      : '${donors.length} donors found near you',
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: _openFilter,
+                  icon: const Icon(Icons.tune, size: 16),
+                  label: const Text('Filter'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (donors.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: Text('No donors found for this blood group',
+                      style: TextStyle(color: AppColors.textSecondary)),
+                ),
+              )
+            else
+              for (final d in donors.take(3))
+                DonorCard(
+                  donor: d,
+                  onCall: () => callDonor(context, d),
+                ),
+            if (donors.length > 3)
+              TextButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          DonorListScreen(initialBloodGroup: _group)),
+                ),
+                child: const Text('View all donors'),
+              ),
+            const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: _openFilter,
-              icon: const Icon(Icons.tune, size: 16),
-              label: const Text('Filter'),
+              onPressed: () => showBecomeDonorSheet(context),
+              icon: const Icon(Icons.volunteer_activism, size: 18),
+              label: const Text('Become a donor'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
-                minimumSize: Size.zero,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        if (donors.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: Text('No donors found for this blood group',
-                  style: TextStyle(color: AppColors.textSecondary)),
-            ),
-          )
-        else
-          for (final d in donors.take(3))
-            DonorCard(
-              donor: d,
-              onCall: () => ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text('Calling ${d.name}...'))),
-            ),
-        if (donors.length > 3)
-          TextButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => DonorListScreen(initialBloodGroup: _group)),
-            ),
-            child: const Text('View all donors'),
-          ),
-      ],
+        );
+      },
     );
   }
 }
-
-
 
 class _MapPlaceholder extends StatelessWidget {
   final int donorCount;
@@ -189,7 +261,11 @@ class _MapPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const pinPositions = [
-      Offset(0.22, 0.25), Offset(0.7, 0.2), Offset(0.15, 0.62), Offset(0.82, 0.68), Offset(0.4, 0.8),
+      Offset(0.22, 0.25),
+      Offset(0.7, 0.2),
+      Offset(0.15, 0.62),
+      Offset(0.82, 0.68),
+      Offset(0.4, 0.8),
     ];
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
@@ -199,7 +275,8 @@ class _MapPlaceholder extends StatelessWidget {
           return Stack(
             children: [
               Positioned.fill(child: CustomPaint(painter: _MapGridPainter())),
-              for (final p in pinPositions.take(donorCount.clamp(0, pinPositions.length)))
+              for (final p
+                  in pinPositions.take(donorCount.clamp(0, pinPositions.length)))
                 Positioned(
                   left: p.dx * c.maxWidth - 14,
                   top: p.dy * c.maxHeight - 28,
@@ -242,8 +319,10 @@ class _MapGridPainter extends CustomPainter {
     for (double y = 20; y < size.height; y += 55) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y - 15), thin);
     }
-    canvas.drawLine(Offset(0, size.height * 0.4), Offset(size.width, size.height * 0.55), road);
-    canvas.drawLine(Offset(size.width * 0.35, 0), Offset(size.width * 0.6, size.height), road);
+    canvas.drawLine(
+        Offset(0, size.height * 0.4), Offset(size.width, size.height * 0.55), road);
+    canvas.drawLine(
+        Offset(size.width * 0.35, 0), Offset(size.width * 0.6, size.height), road);
   }
 
   @override

@@ -1,11 +1,14 @@
-
 import 'package:flutter/material.dart';
+
+import '../../../core/routes/route_names.dart';
+import 'child_my_requests_screen.dart';
 import 'sick_child_care_screen.dart';
 import 'baby_health_record_screen.dart';
 import 'pediatric_medicine_screen.dart';
 import 'baby_equipment_rental_screen.dart';
 import 'pediatrician_locator_screen.dart';
 import 'emergency_transport_screen.dart';
+import '../../messages/presentation/messages_screen.dart';
 
 class ChildHomeScreen extends StatelessWidget {
   const ChildHomeScreen({super.key});
@@ -57,25 +60,16 @@ class ChildHomeScreen extends StatelessWidget {
               // CareLink header
               Row(
                 children: [
-                  const Icon(
-                    Icons.favorite,
-                    color: Colors.redAccent,
-                    size: 30,
-                  ),
+                  const Icon(Icons.favorite, color: Colors.redAccent, size: 30),
                   const SizedBox(width: 8),
                   const Text(
                     'CareLink',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
                   IconButton(
                     onPressed: () {},
-                    icon: const Icon(
-                      Icons.notifications_none,
-                    ),
+                    icon: const Icon(Icons.notifications_none),
                   ),
                 ],
               ),
@@ -121,10 +115,8 @@ class ChildHomeScreen extends StatelessWidget {
                   children: [
                     const Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             'Happy & Healthy\nChildhood',
@@ -141,14 +133,15 @@ class ChildHomeScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                   ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset('assets/images/onboarding/child_care.png',
-                  width: 120,
-                  height: 115,
-                  fit: BoxFit.cover,
-                   ),
-                   ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        'assets/images/onboarding/child_care.png',
+                        width: 120,
+                        height: 115,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -157,20 +150,13 @@ class ChildHomeScreen extends StatelessWidget {
 
               // Services heading
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
                     'Child Care Services',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
                   ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text('See All'),
-                  ),
+                  TextButton(onPressed: () {}, child: const Text('See All')),
                 ],
               ),
 
@@ -179,109 +165,104 @@ class ChildHomeScreen extends StatelessWidget {
               // Service grid
               GridView.builder(
                 shrinkWrap: true,
-                physics:
-                    const NeverScrollableScrollPhysics(),
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: services.length,
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                   childAspectRatio: 0.95,
                 ),
-  
-itemBuilder: (context, index) {
-  final service = services[index];
 
-  return InkWell(
-    borderRadius: BorderRadius.circular(15),
-    
+                itemBuilder: (context, index) {
+                  final service = services[index];
 
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(15),
 
-onTap: () {
-  if (index == 0) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const SickChildCareScreen(),
-      ),
-    );
-  } else if (index == 1) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const BabyHealthRecordScreen(),
-      ),
-    );
-  } else if (index == 2) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const PediatricMedicineScreen(),
-      ),
-    );
-  } else if (index == 3) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const BabyEquipmentRentalScreen(),
-      ),
-    );
-  }
-  else if (index == 4) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const PediatricianLocatorScreen(),
-    ),
-  );
-}
-else if (index == 5) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const EmergencyTransportScreen(),
-    ),
-  );
-}
-},
+                    onTap: () {
+                      if (index == 0) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SickChildCareScreen(),
+                          ),
+                        );
+                      } else if (index == 1) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const BabyHealthRecordScreen(),
+                          ),
+                        );
+                      } else if (index == 2) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const PediatricMedicineScreen(),
+                          ),
+                        );
+                      } else if (index == 3) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const BabyEquipmentRentalScreen(),
+                          ),
+                        );
+                      } else if (index == 4) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const PediatricianLocatorScreen(),
+                          ),
+                        );
+                      } else if (index == 5) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const EmergencyTransportScreen(),
+                          ),
+                        );
+                      }
+                    },
 
-
-    child: Container(
-      decoration: BoxDecoration(
-        color: index.isEven
-            ? const Color(0xFFFFF0F5)
-            : const Color(0xFFEAF8F4),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            service['icon'] as IconData,
-            size: 30,
-            color: service['color'] as Color,
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 4,
-            ),
-            child: Text(
-              service['name'] as String,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-},
-
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: index.isEven
+                            ? const Color(0xFFFFF0F5)
+                            : const Color(0xFFEAF8F4),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            service['icon'] as IconData,
+                            size: 30,
+                            color: service['color'] as Color,
+                          ),
+                          const SizedBox(height: 10),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              service['name'] as String,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -295,13 +276,24 @@ else if (index == 5) {
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
         onTap: (index) {
-          // Navigation will be connected later.
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ChildMyRequestsScreen(),
+              ),
+            );
+          } else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MessagesScreen()),
+            );
+          } else if (index == 3) {
+            Navigator.pushNamed(context, RouteNames.profile);
+          }
         },
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
             icon: Icon(Icons.assignment_outlined),
             label: 'My Requests',

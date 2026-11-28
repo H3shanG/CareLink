@@ -38,6 +38,10 @@ dependencies:
   firebase_core: ^5.2.0
   firebase_auth: ^7.1.0
   cloud_firestore: ^7.2.0
+<<<<<<< HEAD
+=======
+  geolocator: ^14.1.2
+>>>>>>> origin/main
   url_launcher: ^6.3.3
 
 dev_dependencies:

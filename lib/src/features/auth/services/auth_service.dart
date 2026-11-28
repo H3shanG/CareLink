@@ -15,7 +15,7 @@ class AuthService {
     );
   }
 
-   Future<void> register({
+  Future<void> register({
     required String name,
     required String email,
     required String phone,
@@ -39,6 +39,39 @@ class AuthService {
   }
 
   Future<void> logout() => _auth.signOut();
+
+  // Current signed-in user (null if nobody is signed in)
+  static User? get currentUser => FirebaseAuth.instance.currentUser;
+
+  // Current user's uid (null if nobody is signed in)
+  static String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
+
+  // Use this when a screen requires a signed-in user
+  static String requireUserId() {
+    final uid = currentUserId;
+    if (uid == null) {
+      throw StateError('No signed-in user');
+    }
+    return uid;
+  }
+
+  // Emits a value whenever the user signs in or out
+  static Stream<User?> get authStateChanges =>
+      FirebaseAuth.instance.authStateChanges();
+
+  // Reads the profile document from the users collection
+  Future<Map<String, dynamic>?> getUserProfile() async {
+    final uid = currentUserId;
+    if (uid == null) return null;
+    final snap = await _db.collection('users').doc(uid).get();
+    return snap.data();
+  }
+
+  // Updates profile fields (creates the document if it does not exist)
+  Future<void> updateUserProfile(Map<String, dynamic> data) async {
+    final uid = requireUserId();
+    await _db.collection('users').doc(uid).set(data, SetOptions(merge: true));
+  }
 
   static String messageFromCode(String code) {
     switch (code) {

@@ -9,6 +9,9 @@ class RouteNames {
   static const String journeySelection = '/journey-selection';
   static const String forgotPassword = '/forgot-password';
   static const String adultHome = '/adult-home';
+  static const String profile = '/profile';
+  static const String equipmentRental = '/equipment-rental';
+  static const String organDonor = '/organ-donor';
   static const String childHome = '/child-home';
   static const String bloodDonation = '/blood-donation';
   static const String bloodRequest = '/blood-donation/request';
@@ -18,3 +21,4 @@ class RouteNames {
   static const String caregiverBooking = '/caregiver/booking';
   static const String bookingDetails = '/booking-details';
 }
+
